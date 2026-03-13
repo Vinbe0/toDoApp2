@@ -10,8 +10,13 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "primeicons": "^7.0.0",
     "tailwindcss": "^4.2.1",
-    "vue": "^3.5.29"
+    "vue": "^3.5.29",
+    "vue-draggable-plus": "^0.6.1",
+    "vue-router": "^5.0.3",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.4",

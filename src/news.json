@@ -1,0 +1,88 @@
+{
+  "news": [
+    {
+      "id": "1",
+      "title": "Time Blocking Guide",
+      "type": "Technique",
+      "description": "A practical step-by-step guide to plan focused work blocks and breaks that reduce context switching and increase deep work effectiveness.",
+      "location": "Personal Workflow",
+      "salary": "Estimated: 15–90 min",
+      "company": {
+        "name": "Productivity Lab",
+        "description": "Practical resources, templates, and examples to help you schedule and protect focused work time.",
+        "contactEmail": "hello@productivitylab.example",
+        "contactPhone": "N/A"
+      }
+    },
+    {
+      "id": "2",
+      "title": "MITs Planner",
+      "type": "Prioritization",
+      "description": "A simple planner for identifying 1–3 Most Important Tasks each day so high-impact work happens first.",
+      "location": "Anywhere",
+      "salary": "Benefit: Higher impact work",
+      "company": {
+        "name": "Focus Framework",
+        "description": "Tools and checklists that help you prioritize daily work and avoid busywork.",
+        "contactEmail": "support@focusframework.example",
+        "contactPhone": "N/A"
+      }
+    },
+    {
+      "id": "3",
+      "title": "Distraction Control Toolkit",
+      "type": "Environment",
+      "description": "Ideas and settings to minimize interruptions: notification rules, workspace adjustments, and boundary-setting templates.",
+      "location": "Home Office",
+      "salary": "Tip: Use Do Not Disturb",
+      "company": {
+        "name": "Calm Workspace",
+        "description": "Guides to create low-friction environments that support sustained focus and productive habits.",
+        "contactEmail": "info@calmworkspace.example",
+        "contactPhone": "N/A"
+      }
+    },
+    {
+      "id": "4",
+      "title": "Pomodoro Starter Kit",
+      "type": "Technique",
+      "description": "A beginner-friendly introduction to the Pomodoro method with timers, break strategies, and tracking sheets.",
+      "location": "Desk or Remote",
+      "salary": "Estimated: 25–120 min",
+      "company": {
+        "name": "Focus Tools",
+        "description": "Timer templates and tracking tools to build consistent focus habits using short, intense sessions.",
+        "contactEmail": "hello@focustools.example",
+        "contactPhone": "N/A"
+      }
+    },
+    {
+      "id": "5",
+      "title": "Energy Management Routine",
+      "type": "Routine",
+      "description": "Strategies for aligning demanding tasks with your peak energy windows and scheduling restorative breaks to sustain performance.",
+      "location": "Anywhere",
+      "salary": "Benefit: Sustained performance",
+      "company": {
+        "name": "Peak Habits",
+        "description": "Actionable routines and micro-habits to help you manage energy, not just time.",
+        "contactEmail": "team@peakhabits.example",
+        "contactPhone": "N/A"
+      }
+    },
+    {
+      "id": "6",
+      "title": "Weekly Review Template",
+      "type": "Reflection",
+      "description": "A concise template to review progress, capture learnings, and plan priorities for the coming week to maintain momentum.",
+      "location": "Planner",
+      "salary": "Benefit: Clear direction",
+      "company": {
+        "name": "Review HQ",
+        "description": "Templates and prompts to make weekly reviews fast, valuable, and habit-forming.",
+        "contactEmail": "review@reviewhq.example",
+        "contactPhone": "N/A"
+      }
+    }
+  ]
+}
