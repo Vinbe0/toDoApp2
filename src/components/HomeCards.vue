@@ -8,7 +8,7 @@
               Star to plan you day efficiently
             </p>
             <a
-              href="jobs.html"
+              href="/"
               class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-gray-700"
             >
               Add Tasks
@@ -20,7 +20,7 @@
               Set you tasks with our Pro Version
             </p>
             <a
-              href="add-job.html"
+              href="/"
               class="inline-block bg-green-500 text-white rounded-lg px-4 py-2 hover:bg-green-600"
             >
               Add Tasks

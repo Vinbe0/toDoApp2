@@ -1,5 +1,6 @@
 <script setup>
     import logo from '@/assets/bp.png';
+    import { RouterLink } from 'vue-router'
 </script>
 
 <template>
@@ -9,27 +10,32 @@
           <div
             class="flex flex-1 items-center justify-center md:items-stretch md:justify-start gap-1"
           >
-            <a class="flex flex-shrink-0 items-center mr-4" href="index.html">
+            <RouterLink class="flex flex-shrink-0 items-center mr-4" to="index.html">
               <img class="h-10 w-auto" :src="logo" alt="Vue Jobs" />
               <span class="hidden md:block text-white text-2xl font-bold ml-2"
                 >TODOS</span
               >
-            </a>
-              <div class="flex space-x-2 items-center md:ml-auto gap-1">
-                <a
-                  href="index.html"
+            </RouterLink>
+              <div class="flex space-x-2 items-center md:ml-auto gap-1 items-end">
+                <RouterLink
+                  to="/"
                   class="text-white font-semibold hover:bg-gray-900 text-lg rounded-md px-3 py-2"
-                  >Home</a
+                  >Home</RouterLink
                 >
-                <a
-                  href="jobs.html"
+                <RouterLink
+                  to="/todo"
                   class="text-white font-semibold hover:bg-green-900 text-lg rounded-md px-3 py-2"
-                  >Our Products</a
+                  >Manage Tasks</RouterLink
                 >
-                <a
-                  href="add-job.html"
+                <RouterLink
+                  to="/privacy"
                   class="text-white font-semibold hover:bg-green-900 text-lg rounded-md px-3 py-2"
-                  >Privacy policy</a
+                  >Privacy policy</RouterLink
+                >
+                <RouterLink
+                  to="add-job.html"
+                  class="text-white font-semibold hover:bg-green-900 text-lg rounded-md px-3 py-2 items-end"
+                  >Account</RouterLink
                 >
               </div>
           </div>
