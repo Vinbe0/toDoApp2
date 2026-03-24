@@ -10,7 +10,7 @@ export type FilterMode =
   | "byLabel";
 
 export interface Task {
-  id: number;
+  id: string;
   text: string;
   description: string;
   completed: boolean;

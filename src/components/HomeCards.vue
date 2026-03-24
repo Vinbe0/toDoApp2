@@ -8,7 +8,7 @@
               Star to plan you day efficiently
             </p>
             <a
-              href="/"
+              href="/first"
               class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-gray-700"
             >
               Add Tasks

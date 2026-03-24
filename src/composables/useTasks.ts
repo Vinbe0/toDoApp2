@@ -47,6 +47,7 @@ export function useTasks() {
   const selectedLabels = ref<Label[]>([]);
   const labelFilterOpen = ref<boolean>(false);
   const strictLabelFilter = ref<boolean>(false);
+  const searchTitle = ref<string>("");
 
   const compareText = (a: Task, b: Task) => a.text.localeCompare(b.text);
 
@@ -108,7 +109,15 @@ export function useTasks() {
       return strictLabelFilter.value ? filterLabelAll() : filterLabelSome();
     }
 
+    if (filter.value === "byTitle") {
+      const query = searchTitle.value.trim().toLowerCase();
+      if (!query) return result;
+      return result.filter((task) => task.text.toLowerCase().includes(query));
+    }
+
     return result;
+
+    
   });
 
   const draggableTasks = computed({
@@ -259,6 +268,10 @@ export function useTasks() {
     toggleArrayLabel(selectedLabels.value, label);
   };
 
+  const handleSearch = () => {
+    filter.value = "byTitle";
+  };
+
   return {
     tasks,
     filter,
@@ -266,11 +279,13 @@ export function useTasks() {
     editing,
     selectedLabels,
     labelFilterOpen,
+    searchTitle,
     strictLabelFilter,
     filteredTasks,
     draggableTasks,
     addNewTask,
     deleteTask,
+    handleSearch,
     completeTask,
     startEdit,
     saveEdit,

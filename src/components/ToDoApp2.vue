@@ -9,6 +9,8 @@
         type="text"
         class="rounded-2xl bg-gray-200 px-2 py-1.5 font-semibold"
         placeholder="Enter title..."
+        @click="handleSearch"
+        v-model="searchTitle"
         />
         <h2 class="mb-6 text-xl font-bold text-black">Filters</h2>
 
@@ -243,10 +245,12 @@ const {
   editing,
   selectedLabels,
   labelFilterOpen,
+  searchTitle,
   strictLabelFilter,
   draggableTasks,
   addNewTask,
   deleteTask,
+  handleSearch,
   completeTask,
   startEdit,
   saveEdit,
