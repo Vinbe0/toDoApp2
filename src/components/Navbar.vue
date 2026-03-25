@@ -10,7 +10,7 @@
           <div
             class="flex flex-1 items-center justify-center md:items-stretch md:justify-start gap-1"
           >
-            <RouterLink class="flex flex-shrink-0 items-center mr-4" to="index.html">
+            <RouterLink class="flex flex-shrink-0 items-center mr-4" to="/">
               <img class="h-10 w-auto" :src="logo" alt="Vue Jobs" />
               <span class="hidden md:block text-white text-2xl font-bold ml-2"
                 >TODOS</span
@@ -33,7 +33,7 @@
                   >Privacy policy</RouterLink
                 >
                 <RouterLink
-                  to="add-job.html"
+                  :to="{ name: 'account' }"
                   class="text-white font-semibold hover:bg-green-900 text-lg rounded-md px-3 py-2 items-end"
                   >Account</RouterLink
                 >
