@@ -1,8 +1,12 @@
 import { computed, h, onMounted, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import type { FilterMode, Label, Priority, Task } from "@/types/todo";
+import { useAuth } from "./useAuth";
+import { tasksApi } from "@/api/tasksApi";
 
-const STORAGE_KEY = "my-tasks";
+const GUEST_STORAGE_KEY = "guest-tasks";
+
+const { isRegistered } = useAuth()
 
 export const availableLabels: Label[] = ["work", "shopping", "university"];
 
@@ -48,6 +52,45 @@ export function useTasks() {
   const labelFilterOpen = ref<boolean>(false);
   const strictLabelFilter = ref<boolean>(false);
   const searchTitle = ref<string>("");
+
+
+  function saveGuestTasks(){
+    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(tasks.value))
+  }
+
+  function loadGuestTasks(){
+    const storedTasks = localStorage.getItem(GUEST_STORAGE_KEY);
+    if (!storedTasks) return;
+
+    try {
+      const parsed = JSON.parse(storedTasks) as Partial<Task>[];
+      tasks.value = parsed.map((task) => ({
+        id: typeof task.id === "number" ? task.id : Date.now(),
+        text: typeof task.text === "string" ? task.text : "",
+        description: typeof task.description === "string" ? task.description : "",
+        completed: Boolean(task.completed),
+        deadline: task.deadline ?? null,
+        priority:
+          task.priority === "high" ||
+          task.priority === "medium" ||
+          task.priority === "low"
+            ? task.priority
+            : "medium",
+        labels: Array.isArray(task.labels) ? task.labels : [],
+      }));
+    } catch {
+      localStorage.removeItem(GUEST_STORAGE_KEY);
+    }
+  }
+
+  async function reloadTasks() {
+    if (isRegistered.value) {
+      tasks.value = await tasksApi.getTasks()
+    }
+    else {
+      loadGuestTasks()
+    }
+  }
 
   const compareText = (a: Task, b: Task) => a.text.localeCompare(b.text);
 
@@ -137,38 +180,9 @@ export function useTasks() {
     },
   });
 
-  onMounted(() => {
-    const storedTasks = localStorage.getItem(STORAGE_KEY);
-    if (!storedTasks) return;
+  onMounted(() => void reloadTasks());
 
-    try {
-      const parsed = JSON.parse(storedTasks) as Partial<Task>[];
-      tasks.value = parsed.map((task) => ({
-        id: typeof task.id === "number" ? task.id : Date.now(),
-        text: typeof task.text === "string" ? task.text : "",
-        description: typeof task.description === "string" ? task.description : "",
-        completed: Boolean(task.completed),
-        deadline: task.deadline ?? null,
-        priority:
-          task.priority === "high" ||
-          task.priority === "medium" ||
-          task.priority === "low"
-            ? task.priority
-            : "medium",
-        labels: Array.isArray(task.labels) ? task.labels : [],
-      }));
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  });
-
-  watch(
-    tasks,
-    (newTasks) => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newTasks));
-    },
-    { deep: true },
-  );
+  watch(() => isRegistered.value, () => void reloadTasks());
 
   const addNewTask = () => {
     if (draftTask.value.text.trim() === "") return;
@@ -187,16 +201,31 @@ export function useTasks() {
     draftTask.value = createDraftTask();
   };
 
-  const deleteTask = (taskId: number) => {
+  const deleteTask = async (taskId: number) => {
     const index = tasks.value.findIndex((task) => task.id === taskId);
-    if (index === -1) return;
-    tasks.value.splice(index, 1);
+      if ( index === -1 ) return;
+      tasks.value.splice(index, 1);
+    if(isRegistered.value){
+      await tasksApi.deleteTask(taskId)
+    }
+    else{
+      saveGuestTasks()
+    }
   };
 
-  const completeTask = (taskId: number) => {
+  const completeTask = async (taskId: number) => {
     const task = tasks.value.find((item) => item.id === taskId);
     if (!task) return;
+    if(isRegistered.value) {
+      task.completed = !task.completed;
+      await tasksApi.updateTask(taskId, {
+        completed: !task.completed
+      })
+    }
+    else{
     task.completed = !task.completed;
+    saveGuestTasks();
+    }
   };
 
   const startEdit = (task: Task) => {

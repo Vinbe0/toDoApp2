@@ -50,9 +50,15 @@ const router = createRouter({
             path: '/account',
             name: 'account',
             component: AccountView,
-            meta: { showNavbar: true }
+            meta: { showNavbar: true, requiresAuth: true }
         }
     ]
+})
+
+router.beforeEach((to) => {
+  const token = localStorage.getItem("token");
+  if (to.meta.requiresAuth && !token) return "/login";
+  return true;
 })
 
 export default router

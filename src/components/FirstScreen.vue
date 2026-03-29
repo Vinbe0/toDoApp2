@@ -26,4 +26,15 @@
 
 <script setup>
 import logo from "@/assets/bp.png";
+import { useAuth } from "@/composables/useAuth";
+import { useRoute } from "vue-router";
+import useRouter from "vue-router"
+
+const { enterGuestMode } = useAuth();
+const router = useRouter();
+
+const enterAsGuest = () => {
+ enterGuestMode();
+ router.push('/todo')
+}
 </script>
