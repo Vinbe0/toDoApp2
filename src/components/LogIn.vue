@@ -20,6 +20,7 @@
       <button
         class="bg-green-600 rounded-2xl px-1.5 font-bold text-white w-full h-10 text-xl hover:bg-green-700"
         @click="submit"
+        :disabled="isLoading"
       >
         Log In
       </button>
@@ -33,21 +34,34 @@
 import logo from "@/assets/bp.png";
 import { ref } from "vue";
 import { useAuth } from "@/composables/useAuth.ts";
-import { useRouter } from "vue-router"
+import { useRouter } from "vue-router";
+import { useTasks } from "@/composables/useTasks.ts"
 
 const router = useRouter();
 const email = ref<string>('');
 const password = ref<string>('');
 const errorMessage = ref<string>('');
+const isLoading = ref<boolean>(false);
 const { login } = useAuth();
+const { importGuestTasks } = useTasks();
 
 const submit = async() => {
+  isLoading.value = true;
+  errorMessage.value = "";
   try {
     await login(email.value, password.value);
-    router.push("/account")
+    try {
+      await importGuestTasks();
+    } catch {
+      // Login succeeded even if guest import fails.
+    }
+    router.push("/account");
   }
   catch (error) {
-    errorMessage.value = "Log In failed. Please try again"
+    errorMessage.value =
+      error instanceof Error ? error.message : "Log In failed. Please try again";
+  } finally {
+    isLoading.value = false;
   }
 }
 </script>

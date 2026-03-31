@@ -6,7 +6,7 @@ import { tasksApi } from "@/api/tasksApi";
 
 const GUEST_STORAGE_KEY = "guest-tasks";
 
-const { isRegistered } = useAuth()
+const { isRegistered } = useAuth();
 
 export const availableLabels: Label[] = ["work", "shopping", "university"];
 
@@ -29,7 +29,7 @@ type DraftTask = Pick<
 >;
 
 type EditingState = {
-  id: number | null;
+  id: string | null;
   value: string;
 };
 
@@ -53,21 +53,35 @@ export function useTasks() {
   const strictLabelFilter = ref<boolean>(false);
   const searchTitle = ref<string>("");
 
-
-  function saveGuestTasks(){
-    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(tasks.value))
+  function saveGuestTasks() {
+    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(tasks.value));
   }
 
-  function loadGuestTasks(){
+  async function importGuestTasks() {
+    const raw = localStorage.getItem(GUEST_STORAGE_KEY);
+    if(!raw) return
+    const guestTasks = JSON.parse(raw);
+
+    const result = window.confirm("Do you want to import your tasks?")
+    if(result){
+      for(const task of guestTasks){
+        await tasksApi.createTask(task)
+      }
+      localStorage.removeItem(GUEST_STORAGE_KEY)
+    }
+  }
+
+  function loadGuestTasks() {
     const storedTasks = localStorage.getItem(GUEST_STORAGE_KEY);
     if (!storedTasks) return;
 
     try {
       const parsed = JSON.parse(storedTasks) as Partial<Task>[];
       tasks.value = parsed.map((task) => ({
-        id: typeof task.id === "number" ? task.id : Date.now(),
+        id: typeof task.id === "string" ? task.id : crypto.randomUUID(),
         text: typeof task.text === "string" ? task.text : "",
-        description: typeof task.description === "string" ? task.description : "",
+        description:
+          typeof task.description === "string" ? task.description : "",
         completed: Boolean(task.completed),
         deadline: task.deadline ?? null,
         priority:
@@ -85,18 +99,21 @@ export function useTasks() {
 
   async function reloadTasks() {
     if (isRegistered.value) {
-      tasks.value = await tasksApi.getTasks()
-    }
-    else {
-      loadGuestTasks()
+      tasks.value = await tasksApi.getTasks();
+    } else {
+      loadGuestTasks();
     }
   }
 
   const compareText = (a: Task, b: Task) => a.text.localeCompare(b.text);
 
   const compareDate = (a: Task, b: Task) => {
-    const aTime = a.deadline ? Date.parse(a.deadline) : Number.POSITIVE_INFINITY;
-    const bTime = b.deadline ? Date.parse(b.deadline) : Number.POSITIVE_INFINITY;
+    const aTime = a.deadline
+      ? Date.parse(a.deadline)
+      : Number.POSITIVE_INFINITY;
+    const bTime = b.deadline
+      ? Date.parse(b.deadline)
+      : Number.POSITIVE_INFINITY;
     return aTime - bTime;
   };
 
@@ -159,8 +176,6 @@ export function useTasks() {
     }
 
     return result;
-
-    
   });
 
   const draggableTasks = computed({
@@ -182,13 +197,16 @@ export function useTasks() {
 
   onMounted(() => void reloadTasks());
 
-  watch(() => isRegistered.value, () => void reloadTasks());
+  watch(
+    () => isRegistered.value,
+    () => void reloadTasks(),
+  );
 
-  const addNewTask = () => {
+  const addNewTask = async () => {
     if (draftTask.value.text.trim() === "") return;
 
     const newTask: Task = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       text: draftTask.value.text,
       description: draftTask.value.description,
       completed: false,
@@ -197,34 +215,38 @@ export function useTasks() {
       labels: [...draftTask.value.labels],
     };
 
-    tasks.value.push(newTask);
+    if (isRegistered.value) {
+      const created = await tasksApi.createTask(newTask);
+      tasks.value.push(created);
+    } else {
+      tasks.value.push(newTask);
+      saveGuestTasks();
+    }
     draftTask.value = createDraftTask();
   };
 
-  const deleteTask = async (taskId: number) => {
+  const deleteTask = async (taskId: string) => {
     const index = tasks.value.findIndex((task) => task.id === taskId);
-      if ( index === -1 ) return;
-      tasks.value.splice(index, 1);
-    if(isRegistered.value){
-      await tasksApi.deleteTask(taskId)
-    }
-    else{
-      saveGuestTasks()
+    if (index === -1) return;
+    tasks.value.splice(index, 1);
+    if (isRegistered.value) {
+      await tasksApi.deleteTask(taskId);
+    } else {
+      saveGuestTasks();
     }
   };
 
-  const completeTask = async (taskId: number) => {
+  const completeTask = async (taskId: string) => {
     const task = tasks.value.find((item) => item.id === taskId);
     if (!task) return;
-    if(isRegistered.value) {
+    if (isRegistered.value) {
       task.completed = !task.completed;
       await tasksApi.updateTask(taskId, {
-        completed: !task.completed
-      })
-    }
-    else{
-    task.completed = !task.completed;
-    saveGuestTasks();
+        completed: task.completed,
+      });
+    } else {
+      task.completed = !task.completed;
+      saveGuestTasks();
     }
   };
 
@@ -232,17 +254,24 @@ export function useTasks() {
     editing.value = { id: task.id, value: task.text };
   };
 
-  const saveEdit = () => {
-    if (editing.value.id === null) return;
+  const saveEdit = async () => {
+    const id = editing.value.id;
+    if (id === null) return;
 
-    const task = tasks.value.find((item) => item.id === editing.value.id);
+    const task = tasks.value.find((item) => item.id === id);
     if (!task) return;
 
-    task.text = editing.value.value.trim() || task.text;
+    if (isRegistered.value) {
+      task.text = editing.value.value.trim() || task.text;
+      await tasksApi.updateTask(id, { text: task.text });
+    } else {
+      task.text = editing.value.value.trim() || task.text;
+      saveGuestTasks();
+    }
     editing.value = { id: null, value: "" };
   };
 
-  const clearCompleted = () => {
+  const clearCompleted = async () => {
     const completedTasks = tasks.value.filter((task) => task.completed);
 
     if (!completedTasks.length) {
@@ -251,7 +280,16 @@ export function useTasks() {
     }
 
     const previousTasks = tasks.value.slice();
-    tasks.value = tasks.value.filter((task) => !task.completed);
+
+    if (isRegistered.value) {
+      await Promise.all(
+        completedTasks.map((task) => tasksApi.deleteTask(task.id)),
+      );
+      tasks.value = tasks.value.filter((task) => !task.completed);
+    } else {
+      tasks.value = tasks.value.filter((task) => !task.completed);
+      saveGuestTasks();
+    }
 
     const toastId = toast(
       h("div", { class: "flex items-center gap-3" }, [
@@ -322,5 +360,6 @@ export function useTasks() {
     openLabelFilter,
     toggleDraftLabel,
     toggleSelectedLabel,
+    importGuestTasks,
   };
 }

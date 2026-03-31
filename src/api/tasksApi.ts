@@ -1,14 +1,32 @@
 const API_BASE = import.meta.env.VITE_API_URL;
+import { toApiCreateTask, toUiTask } from "@/api/mappers";
 
 export type Task = {
   id: string;
   text: string;
   description: string;
   deadline: string | null;
-  priority: string;
+  priority: "low" | "medium" | "high";
   completed: boolean;
   labels: string[];
 };
+
+type ApiTask = {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate?: string | null;
+  priority?: "low" | "medium" | "high";
+  completed?: boolean;
+};
+
+const toApiUpdateTask = (patch: Partial<Task>) => ({
+  ...(patch.text !== undefined ? { title: patch.text } : {}),
+  ...(patch.description !== undefined ? { description: patch.description } : {}),
+  ...(patch.deadline !== undefined ? { dueDate: patch.deadline } : {}),
+  ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+  ...(patch.completed !== undefined ? { completed: patch.completed } : {}),
+});
 
 async function get<T>(path: string): Promise<T> {
   const token = localStorage.getItem("token");
@@ -57,7 +75,7 @@ async function put<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-async function del<T>(path: string): Promise<T> {
+async function del(path: string): Promise<void> {
   const token = localStorage.getItem("token");
   const res = await fetch(`${API_BASE}${path}`, {
     method: "DELETE",
@@ -67,14 +85,24 @@ async function del<T>(path: string): Promise<T> {
     },
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-  return data as T;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
 }
 
 export const tasksApi = {
-  getTasks: () => get<Task[]>("/api/tasks"),
-  createTask: ( draft: unknown ) => post<Task>("/api/tasks", draft),
-  updateTask: (id: string, patch: unknown) => put<Task>(`/api/tasks/${id}`, patch),
-  deleteTask: (id: string) => del<void>(`/api/tasks/${id}`)
+  async getTasks() {
+    const data = await get<ApiTask[]>("/api/tasks");
+    return data.map(toUiTask);
+  },
+  async createTask(draft: Partial<Task>) {
+    const created = await post<ApiTask>("/api/tasks", toApiCreateTask(draft));
+    return toUiTask(created);
+  },
+  async updateTask(id: string, patch: Partial<Task>) {
+    const updated = await put<ApiTask>(`/api/tasks/${id}`, toApiUpdateTask(patch));
+    return toUiTask(updated);
+  },
+  deleteTask: (id: string) => del(`/api/tasks/${id}`),
 };

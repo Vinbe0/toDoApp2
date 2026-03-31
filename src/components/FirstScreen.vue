@@ -16,9 +16,12 @@
         <RouterLink to="/register" class="bg-green-600 rounded-2xl px-1.5 font-bold text-white text-center pt-1.5 flex-1 h-10 text-xl hover:bg-green-700">
             Register
         </RouterLink>
-        <RouterLink to="/" class="bg-gray-600 rounded-2xl px-1.5 font-bold text-white text-center pt-1.5 flex-1 h-10 text-xl hover:bg-gray-700">
+        <button
+          @click="continueAsGuest"
+          class="bg-gray-600 rounded-2xl px-1.5 font-bold text-white text-center pt-1.5 flex-1 h-10 text-xl hover:bg-gray-700"
+        >
             Guest
-        </RouterLink>
+        </button>
       </div>
     </div>
   </div>
@@ -26,15 +29,13 @@
 
 <script setup>
 import logo from "@/assets/bp.png";
-import { useAuth } from "@/composables/useAuth";
-import { useRoute } from "vue-router";
-import useRouter from "vue-router"
+import { useRouter } from "vue-router";
+import { enterGuestMode } from "@/composables/useAuth";
 
-const { enterGuestMode } = useAuth();
 const router = useRouter();
 
-const enterAsGuest = () => {
- enterGuestMode();
- router.push('/todo')
-}
+const continueAsGuest = () => {
+  enterGuestMode();
+  router.push("/todo");
+};
 </script>

@@ -20,6 +20,7 @@
       <button
         class="bg-green-600 rounded-2xl px-1.5 font-bold text-white w-full h-10 text-xl hover:bg-green-700"
         @click="submit"
+        :disabled="isLoading"
       >
         Sign up
       </button>
@@ -33,19 +34,34 @@
 import logo from "@/assets/bp.png";
 import {ref} from "vue";
 import { useAuth } from "@/composables/useAuth.ts";
+import { useTasks } from "@/composables/useTasks.ts"
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const { register } = useAuth();
+const { importGuestTasks } = useTasks();
 const email = ref<string>('');
 const password = ref<string>('');
 const errorMessage = ref<string>('');
+const isLoading = ref<boolean>(false);
 
 const submit = async () => {
-  try { await register(email.value, password.value)
-  router.push("/account")}
-  catch (error) {
-    errorMessage.value = "Registation failed. Please try again"
+  isLoading.value = true;
+  errorMessage.value = "";
+  try {
+    await register(email.value, password.value);
+    try {
+      await importGuestTasks();
+    } catch {
+      // Registration succeeded even if guest import fails.
+    }
+    router.push("/account");
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : "Registration failed. Please try again";
+  }
+  finally {
+    isLoading.value = false;
   }
 }
 
