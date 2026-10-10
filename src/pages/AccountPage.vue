@@ -27,7 +27,7 @@ const stats = computed(() => [
 
 const submit = () => {
   auth.logout();
-  router.push("/login");
+  router.push({ name: "login" });
 };
 </script>
 

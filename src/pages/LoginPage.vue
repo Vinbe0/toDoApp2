@@ -46,14 +46,15 @@ import AuthLayout from "@/features/auth/components/AuthLayout.vue";
 import PasswordInput from "@/features/auth/components/PasswordInput.vue";
 import BaseInput from "@/shared/ui/BaseInput.vue";
 import BaseButton from "@/shared/ui/BaseButton.vue";
-import { RouterLink } from "vue-router";
 import { ref } from "vue";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
+import { safeRedirect } from "@/app/router/guards";
 import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 import { notify } from "@/shared/lib/notify";
 
 const router = useRouter();
+const route = useRoute();
 const email = ref<string>("");
 const password = ref<string>("");
 const errorMessage = ref<string>("");
@@ -85,7 +86,7 @@ const submit = async () => {
     } catch {
       // Login succeeded even if guest import fails.
     }
-    router.push("/account");
+    await router.push(safeRedirect(route.query.redirect));
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : "Log In failed. Please try again";
   } finally {

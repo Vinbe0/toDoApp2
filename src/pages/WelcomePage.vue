@@ -25,6 +25,6 @@ const auth = useAuthStore();
 
 const continueAsGuest = () => {
   auth.logout();
-  router.push("/todo");
+  router.push({ name: "tasks" });
 };
 </script>
