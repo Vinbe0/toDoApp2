@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from "vue";
+import { computed, useAttrs, useId } from "vue";
 
 defineOptions({ inheritAttrs: false });
 
@@ -12,21 +12,39 @@ defineProps<{
 
 const model = defineModel<string>({ default: "" });
 const id = useId();
+
+// `class` and `style` style the wrapper; every other attribute goes to the control.
+const attrs = useAttrs();
+const controlAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs;
+  return rest;
+});
+
+const controlClass =
+  "w-full rounded-xl border border-border bg-surface px-3 text-sm text-fg shadow-xs transition placeholder:text-fg-subtle focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none aria-[invalid=true]:border-red-500";
 </script>
 
 <template>
-  <div class="grid gap-1.5">
+  <div class="grid gap-1.5" :class="attrs.class" :style="attrs.style">
     <label v-if="label" :for="id" class="text-sm font-medium text-fg">{{ label }}</label>
     <div class="relative">
-      <component
-        :is="multiline ? 'textarea' : 'input'"
+      <textarea
+        v-if="multiline"
         :id="id"
         v-model="model"
-        v-bind="$attrs"
+        v-bind="controlAttrs"
         :aria-invalid="!!error"
         :aria-describedby="error || hint ? `${id}-msg` : undefined"
-        class="w-full rounded-xl border border-border bg-surface px-3 text-sm text-fg shadow-xs transition placeholder:text-fg-subtle focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none aria-[invalid=true]:border-red-500"
-        :class="[multiline ? 'min-h-24 resize-y py-2' : 'h-10', $slots.trailing && 'pr-10']"
+        :class="[controlClass, 'min-h-24 resize-y py-2']"
+      />
+      <input
+        v-else
+        :id="id"
+        v-model="model"
+        v-bind="controlAttrs"
+        :aria-invalid="!!error"
+        :aria-describedby="error || hint ? `${id}-msg` : undefined"
+        :class="[controlClass, 'h-10', $slots.trailing && 'pr-10']"
       />
       <div v-if="$slots.trailing" class="absolute inset-y-0 right-1.5 flex items-center">
         <slot name="trailing" />
