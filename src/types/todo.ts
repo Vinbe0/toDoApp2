@@ -1,13 +1,7 @@
 export type Priority = "high" | "medium" | "low";
 export type Label = "work" | "shopping" | "university";
 export type FilterMode =
-  | "all"
-  | "active"
-  | "completed"
-  | "byTitle"
-  | "byDate"
-  | "byPriority"
-  | "byLabel";
+  "all" | "active" | "completed" | "byTitle" | "byDate" | "byPriority" | "byLabel";
 
 export interface Task {
   id: string;

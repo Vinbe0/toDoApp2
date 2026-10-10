@@ -54,7 +54,11 @@ watch(
       :aria-checked="task.completed"
       :aria-label="`Mark ${task.text} as ${task.completed ? 'not done' : 'done'}`"
       class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors"
-      :class="task.completed ? 'border-brand-600 bg-brand-600 text-white' : 'border-fg-subtle hover:border-brand-500'"
+      :class="
+        task.completed
+          ? 'border-brand-600 bg-brand-600 text-white'
+          : 'border-fg-subtle hover:border-brand-500'
+      "
       @click="emit('toggle')"
     >
       <i v-if="task.completed" class="pi pi-check text-[10px]" aria-hidden="true" />
@@ -92,13 +96,16 @@ watch(
         </BaseBadge>
         <BaseBadge v-if="task.deadline" :tone="isOverdue(task) ? 'red' : 'neutral'">
           <i class="pi pi-calendar text-[10px]" aria-hidden="true" />
-          {{ isOverdue(task) ? "Overdue · " : isDueToday(task) ? "Today · " : "" }}{{ formatDate(task.deadline) }}
+          {{ isOverdue(task) ? "Overdue · " : isDueToday(task) ? "Today · " : ""
+          }}{{ formatDate(task.deadline) }}
         </BaseBadge>
         <BaseBadge v-for="label in task.labels" :key="label">#{{ labelName(label) }}</BaseBadge>
       </div>
     </div>
 
-    <div class="flex shrink-0 gap-1 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+    <div
+      class="flex shrink-0 gap-1 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+    >
       <button
         type="button"
         class="grid size-8 place-items-center rounded-lg text-fg-subtle hover:bg-surface-muted hover:text-fg"

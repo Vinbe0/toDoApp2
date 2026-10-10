@@ -54,7 +54,10 @@ watch(filter, (value) => {
         </p>
       </div>
       <BaseBadge :tone="isRegistered ? 'brand' : 'neutral'">
-        <i :class="['pi', isRegistered ? 'pi-cloud' : 'pi-desktop', 'text-[10px]']" aria-hidden="true" />
+        <i
+          :class="['pi', isRegistered ? 'pi-cloud' : 'pi-desktop', 'text-[10px]']"
+          aria-hidden="true"
+        />
         {{ isRegistered ? "Synced to your account" : "Guest mode · saved in this browser" }}
       </BaseBadge>
     </header>
@@ -88,7 +91,11 @@ watch(filter, (value) => {
           v-if="!draggableTasks.length"
           :icon="tasks.length ? 'pi-filter-slash' : 'pi-check-square'"
           :title="tasks.length ? 'No tasks match this view' : 'No tasks yet'"
-          :description="tasks.length ? 'Try another filter or search term.' : 'Add your first task above to get started.'"
+          :description="
+            tasks.length
+              ? 'Try another filter or search term.'
+              : 'Add your first task above to get started.'
+          "
         />
 
         <VueDraggable

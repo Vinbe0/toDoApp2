@@ -1,5 +1,8 @@
 <template>
-  <AuthLayout title="Create your account" subtitle="Your guest tasks can be imported after signing up.">
+  <AuthLayout
+    title="Create your account"
+    subtitle="Your guest tasks can be imported after signing up."
+  >
     <form class="grid gap-4" novalidate @submit.prevent="submit">
       <div
         v-if="errorMessage"
@@ -29,10 +32,15 @@
     </form>
     <p class="mt-6 text-center text-sm text-fg-muted">
       Already have an account?
-      <RouterLink to="/login" class="font-semibold text-brand-600 hover:text-brand-700">Log in</RouterLink>
+      <RouterLink to="/login" class="font-semibold text-brand-600 hover:text-brand-700"
+        >Log in</RouterLink
+      >
     </p>
     <p class="mt-2 text-center text-sm text-fg-muted">
-      or <RouterLink to="/todo" class="font-semibold text-fg hover:underline">continue as a guest</RouterLink>
+      or
+      <RouterLink to="/todo" class="font-semibold text-fg hover:underline"
+        >continue as a guest</RouterLink
+      >
     </p>
   </AuthLayout>
 </template>
@@ -43,17 +51,17 @@ import PasswordInput from "@/components/auth/PasswordInput.vue";
 import BaseInput from "@/components/ui/BaseInput.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import { RouterLink } from "vue-router";
-import {ref} from "vue";
+import { ref } from "vue";
 import { useAuth } from "@/composables/useAuth";
-import { useTasks } from "@/composables/useTasks"
+import { useTasks } from "@/composables/useTasks";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const { register } = useAuth();
 const { importGuestTasks } = useTasks();
-const email = ref<string>('');
-const password = ref<string>('');
-const errorMessage = ref<string>('');
+const email = ref<string>("");
+const password = ref<string>("");
+const errorMessage = ref<string>("");
 const isLoading = ref<boolean>(false);
 
 const validate = () => {
@@ -81,11 +89,8 @@ const submit = async () => {
   } catch (error) {
     errorMessage.value =
       error instanceof Error ? error.message : "Registration failed. Please try again";
-  }
-  finally {
+  } finally {
     isLoading.value = false;
   }
-}
-
-
+};
 </script>

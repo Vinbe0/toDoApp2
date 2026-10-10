@@ -47,7 +47,13 @@ const submit = () => {
     </div>
 
     <div v-if="showDetails || text" class="grid gap-4">
-      <BaseInput v-model="description" multiline rows="2" placeholder="Description (optional)" aria-label="Description" />
+      <BaseInput
+        v-model="description"
+        multiline
+        rows="2"
+        placeholder="Description (optional)"
+        aria-label="Description"
+      />
 
       <div class="flex flex-wrap items-end gap-x-6 gap-y-4">
         <label class="grid gap-1.5 text-sm font-medium text-fg">
@@ -67,7 +73,11 @@ const submit = () => {
               :key="option.value"
               type="button"
               class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
-              :class="priority === option.value ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'"
+              :class="
+                priority === option.value
+                  ? 'bg-surface text-fg shadow-sm'
+                  : 'text-fg-muted hover:text-fg'
+              "
               :aria-pressed="priority === option.value"
               @click="priority = option.value"
             >

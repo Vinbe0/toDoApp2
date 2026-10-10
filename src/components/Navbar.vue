@@ -10,7 +10,10 @@ const { isRegistered } = useAuth();
 const route = useRoute();
 const menuOpen = ref(false);
 
-watch(() => route.fullPath, () => (menuOpen.value = false));
+watch(
+  () => route.fullPath,
+  () => (menuOpen.value = false),
+);
 
 const links = [
   { to: "/", label: "Home", exact: true },
@@ -69,7 +72,11 @@ const activeClass = "!bg-brand-500/10 !text-brand-700 dark:!text-brand-300";
       </div>
     </nav>
 
-    <div v-if="menuOpen" id="mobile-menu" class="grid gap-1 border-t border-border px-4 py-3 md:hidden">
+    <div
+      v-if="menuOpen"
+      id="mobile-menu"
+      class="grid gap-1 border-t border-border px-4 py-3 md:hidden"
+    >
       <RouterLink
         v-for="link in links"
         :key="link.to"

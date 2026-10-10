@@ -28,10 +28,15 @@
     </form>
     <p class="mt-6 text-center text-sm text-fg-muted">
       Don't have an account?
-      <RouterLink to="/register" class="font-semibold text-brand-600 hover:text-brand-700">Sign up</RouterLink>
+      <RouterLink to="/register" class="font-semibold text-brand-600 hover:text-brand-700"
+        >Sign up</RouterLink
+      >
     </p>
     <p class="mt-2 text-center text-sm text-fg-muted">
-      or <RouterLink to="/todo" class="font-semibold text-fg hover:underline">continue as a guest</RouterLink>
+      or
+      <RouterLink to="/todo" class="font-semibold text-fg hover:underline"
+        >continue as a guest</RouterLink
+      >
     </p>
   </AuthLayout>
 </template>
@@ -45,12 +50,12 @@ import { RouterLink } from "vue-router";
 import { ref } from "vue";
 import { useAuth } from "@/composables/useAuth";
 import { useRouter } from "vue-router";
-import { useTasks } from "@/composables/useTasks"
+import { useTasks } from "@/composables/useTasks";
 
 const router = useRouter();
-const email = ref<string>('');
-const password = ref<string>('');
-const errorMessage = ref<string>('');
+const email = ref<string>("");
+const password = ref<string>("");
+const errorMessage = ref<string>("");
 const isLoading = ref<boolean>(false);
 const { login } = useAuth();
 const { importGuestTasks } = useTasks();
@@ -65,7 +70,7 @@ const validate = () => {
   return "";
 };
 
-const submit = async() => {
+const submit = async () => {
   errorMessage.value = validate();
   if (errorMessage.value) return;
   isLoading.value = true;
@@ -77,12 +82,10 @@ const submit = async() => {
       // Login succeeded even if guest import fails.
     }
     router.push("/account");
-  }
-  catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Log In failed. Please try again";
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : "Log In failed. Please try again";
   } finally {
     isLoading.value = false;
   }
-}
+};
 </script>

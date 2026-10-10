@@ -4,7 +4,8 @@ import BaseCard from "@/components/ui/BaseCard.vue";
 const sections: Array<{ title: string; intro?: string; items?: string[] }> = [
   {
     title: "Information we collect",
-    intro: "We collect information you provide, information collected automatically, and information from third parties.",
+    intro:
+      "We collect information you provide, information collected automatically, and information from third parties.",
     items: [
       "Personal identifiers: email address, username and profile settings.",
       "User-generated content: task titles, descriptions, due dates, tags and attachments.",
@@ -75,15 +76,20 @@ const sections: Array<{ title: string; intro?: string; items?: string[] }> = [
   <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
     <h1 class="text-3xl font-bold tracking-tight text-fg">Privacy policy</h1>
     <p class="mt-2 text-fg-muted">
-      We are committed to protecting your personal information. This policy covers our data practices
-      across the TODOS web application and associated services.
+      We are committed to protecting your personal information. This policy covers our data
+      practices across the TODOS web application and associated services.
     </p>
 
     <BaseCard class="mt-8 grid gap-8">
       <section v-for="(section, index) in sections" :key="section.title">
         <h2 class="font-semibold text-fg">{{ index + 1 }}. {{ section.title }}</h2>
-        <p v-if="section.intro" class="mt-2 text-sm leading-relaxed text-fg-muted">{{ section.intro }}</p>
-        <ul v-if="section.items" class="mt-2 grid list-disc gap-1.5 pl-5 text-sm leading-relaxed text-fg-muted">
+        <p v-if="section.intro" class="mt-2 text-sm leading-relaxed text-fg-muted">
+          {{ section.intro }}
+        </p>
+        <ul
+          v-if="section.items"
+          class="mt-2 grid list-disc gap-1.5 pl-5 text-sm leading-relaxed text-fg-muted"
+        >
           <li v-for="item in section.items" :key="item">{{ item }}</li>
         </ul>
       </section>

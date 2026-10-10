@@ -18,15 +18,17 @@ const previewTasks = [
       class="pointer-events-none absolute -top-40 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-brand-400/20 blur-3xl"
       aria-hidden="true"
     />
-    <div class="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-2">
+    <div
+      class="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-2"
+    >
       <div>
         <BaseBadge tone="brand" class="mb-4">Free · No sign-up required</BaseBadge>
         <h1 class="text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
           Plan your day. <span class="text-brand-600">Get it done.</span>
         </h1>
         <p class="mt-4 max-w-lg text-lg text-fg-muted">
-          TODOS keeps your tasks organized with priorities, deadlines and labels.
-          Start as a guest in seconds, or create an account to keep your tasks synced.
+          TODOS keeps your tasks organized with priorities, deadlines and labels. Start as a guest
+          in seconds, or create an account to keep your tasks synced.
         </p>
         <div class="mt-8 flex flex-wrap gap-3">
           <BaseButton to="/todo" size="lg">
@@ -39,7 +41,10 @@ const previewTasks = [
         </div>
       </div>
 
-      <div class="rounded-2xl border border-border bg-bg p-4 shadow-xl shadow-brand-900/5" aria-hidden="true">
+      <div
+        class="rounded-2xl border border-border bg-bg p-4 shadow-xl shadow-brand-900/5"
+        aria-hidden="true"
+      >
         <div class="mb-3 flex items-center justify-between px-1">
           <p class="font-semibold text-fg">Today</p>
           <p class="text-xs text-fg-subtle">2 active · 1 completed</p>
@@ -56,7 +61,10 @@ const previewTasks = [
             >
               <i v-if="task.done" class="pi pi-check text-[10px]" />
             </span>
-            <span class="flex-1 text-sm font-medium" :class="task.done && 'text-fg-subtle line-through'">
+            <span
+              class="flex-1 text-sm font-medium"
+              :class="task.done && 'text-fg-subtle line-through'"
+            >
               {{ task.text }}
             </span>
             <BaseBadge :tone="task.tone">{{ task.priority }}</BaseBadge>

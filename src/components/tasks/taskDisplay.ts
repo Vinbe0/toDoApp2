@@ -1,6 +1,10 @@
 import type { Label, Priority, Task } from "@/types/todo";
 
-export const priorityOptions: Array<{ value: Priority; label: string; tone: "red" | "amber" | "blue" }> = [
+export const priorityOptions: Array<{
+  value: Priority;
+  label: string;
+  tone: "red" | "amber" | "blue";
+}> = [
   { value: "high", label: "High", tone: "red" },
   { value: "medium", label: "Medium", tone: "amber" },
   { value: "low", label: "Low", tone: "blue" },

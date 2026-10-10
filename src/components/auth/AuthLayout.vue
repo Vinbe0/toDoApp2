@@ -23,7 +23,9 @@ defineProps<{ title: string; subtitle?: string }>();
         </p>
         <p class="mt-3 text-brand-100">— Mark Twain</p>
       </div>
-      <p class="relative text-sm text-brand-100">Priorities, deadlines and labels in one simple list.</p>
+      <p class="relative text-sm text-brand-100">
+        Priorities, deadlines and labels in one simple list.
+      </p>
     </aside>
 
     <div class="flex flex-col items-center justify-center px-4 py-12 sm:px-6">

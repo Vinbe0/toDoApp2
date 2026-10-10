@@ -22,7 +22,12 @@ const filter = defineModel<FilterMode>("filter", { required: true });
 const search = defineModel<string>("search", { required: true });
 const strictLabels = defineModel<boolean>("strictLabels", { required: true });
 
-const views: Array<{ value: FilterMode; label: string; icon: string; count?: "all" | "active" | "completed" }> = [
+const views: Array<{
+  value: FilterMode;
+  label: string;
+  icon: string;
+  count?: "all" | "active" | "completed";
+}> = [
   { value: "all", label: "All tasks", icon: "pi-inbox", count: "all" },
   { value: "active", label: "Active", icon: "pi-circle", count: "active" },
   { value: "completed", label: "Completed", icon: "pi-check-circle", count: "completed" },
@@ -46,7 +51,10 @@ const views: Array<{ value: FilterMode; label: string; icon: string; count?: "al
       </template>
     </BaseInput>
 
-    <nav aria-label="Task views" class="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:p-0">
+    <nav
+      aria-label="Task views"
+      class="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:p-0"
+    >
       <button
         v-for="view in views"
         :key="view.value"
@@ -83,7 +91,12 @@ const views: Array<{ value: FilterMode; label: string; icon: string; count?: "al
       </label>
     </div>
 
-    <BaseButton variant="ghost" size="sm" class="justify-self-start text-red-600 lg:justify-self-stretch lg:justify-start hover:!bg-red-500/10 hover:!text-red-600" @click="emit('clearCompleted')">
+    <BaseButton
+      variant="ghost"
+      size="sm"
+      class="justify-self-start text-red-600 lg:justify-self-stretch lg:justify-start hover:!bg-red-500/10 hover:!text-red-600"
+      @click="emit('clearCompleted')"
+    >
       <i class="pi pi-trash" aria-hidden="true" /> Clear completed
     </BaseButton>
   </BaseCard>

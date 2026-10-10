@@ -15,9 +15,7 @@ const id = useId();
 
 // `class` and `style` style the wrapper; every other attribute goes to the control.
 const attrs = useAttrs();
-const wrapperAttrs = computed(
-  () => ({ class: attrs.class, style: attrs.style }) as HTMLAttributes,
-);
+const wrapperAttrs = computed(() => ({ class: attrs.class, style: attrs.style }) as HTMLAttributes);
 const controlAttrs = computed(() => {
   const { class: _class, style: _style, ...rest } = attrs;
   return rest;

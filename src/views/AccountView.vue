@@ -1,7 +1,7 @@
 <script setup lang="ts">
-    import Account from '@/components/Account.vue'
+import Account from "@/components/Account.vue";
 </script>
 
 <template>
-    <Account />
+  <Account />
 </template>

@@ -1,10 +1,5 @@
 import { http } from "@/api/client";
-import {
-  type ApiTask,
-  toApiCreateTask,
-  toApiUpdateTask,
-  toUiTask,
-} from "@/api/mappers";
+import { type ApiTask, toApiCreateTask, toApiUpdateTask, toUiTask } from "@/api/mappers";
 import type { Task } from "@/types/todo";
 
 export const tasksApi = {

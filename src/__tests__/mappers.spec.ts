@@ -15,9 +15,7 @@ describe("task mappers", () => {
   });
 
   it("maps a UI draft to the API create payload", () => {
-    expect(
-      toApiCreateTask({ text: "Ship", deadline: "2026-10-12", priority: "high" }),
-    ).toEqual({
+    expect(toApiCreateTask({ text: "Ship", deadline: "2026-10-12", priority: "high" })).toEqual({
       title: "Ship",
       description: "",
       dueDate: "2026-10-12",

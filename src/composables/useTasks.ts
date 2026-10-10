@@ -19,10 +19,7 @@ const priorityWeight: Record<Priority, number> = {
   low: 3,
 };
 
-type DraftTask = Pick<
-  Task,
-  "text" | "description" | "deadline" | "priority" | "labels"
->;
+type DraftTask = Pick<Task, "text" | "description" | "deadline" | "priority" | "labels">;
 
 type EditingState = {
   id: string | null;
@@ -64,15 +61,15 @@ export function useTasks() {
 
   async function importGuestTasks() {
     const raw = localStorage.getItem(GUEST_STORAGE_KEY);
-    if(!raw) return
+    if (!raw) return;
     const guestTasks = JSON.parse(raw);
 
-    const result = window.confirm("Do you want to import your tasks?")
-    if(result){
-      for(const task of guestTasks){
-        await tasksApi.createTask(task)
+    const result = window.confirm("Do you want to import your tasks?");
+    if (result) {
+      for (const task of guestTasks) {
+        await tasksApi.createTask(task);
       }
-      localStorage.removeItem(GUEST_STORAGE_KEY)
+      localStorage.removeItem(GUEST_STORAGE_KEY);
     }
   }
 
@@ -85,14 +82,11 @@ export function useTasks() {
       tasks.value = parsed.map((task) => ({
         id: typeof task.id === "string" ? task.id : crypto.randomUUID(),
         text: typeof task.text === "string" ? task.text : "",
-        description:
-          typeof task.description === "string" ? task.description : "",
+        description: typeof task.description === "string" ? task.description : "",
         completed: Boolean(task.completed),
         deadline: task.deadline ?? null,
         priority:
-          task.priority === "high" ||
-          task.priority === "medium" ||
-          task.priority === "low"
+          task.priority === "high" || task.priority === "medium" || task.priority === "low"
             ? task.priority
             : "medium",
         labels: Array.isArray(task.labels) ? task.labels : [],
@@ -117,12 +111,8 @@ export function useTasks() {
   const compareText = (a: Task, b: Task) => a.text.localeCompare(b.text);
 
   const compareDate = (a: Task, b: Task) => {
-    const aTime = a.deadline
-      ? Date.parse(a.deadline)
-      : Number.POSITIVE_INFINITY;
-    const bTime = b.deadline
-      ? Date.parse(b.deadline)
-      : Number.POSITIVE_INFINITY;
+    const aTime = a.deadline ? Date.parse(a.deadline) : Number.POSITIVE_INFINITY;
+    const bTime = b.deadline ? Date.parse(b.deadline) : Number.POSITIVE_INFINITY;
     return aTime - bTime;
   };
 

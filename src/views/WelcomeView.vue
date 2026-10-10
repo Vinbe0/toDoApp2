@@ -1,7 +1,7 @@
 <script setup lang="ts">
-    import FirstScreen from '@/components/FirstScreen.vue'
+import FirstScreen from "@/components/FirstScreen.vue";
 </script>
 
 <template>
-    <FirstScreen />
+  <FirstScreen />
 </template>
