@@ -1,6 +1,7 @@
 import type { Task } from "@/features/tasks/model/types";
 
-export type NewTask = Omit<Task, "id" | "completed">;
+/** New tasks start open unless `completed` says otherwise (e.g. when importing). */
+export type NewTask = Omit<Task, "id" | "completed"> & { completed?: boolean };
 export type TaskPatch = Partial<Omit<Task, "id">>;
 
 /**

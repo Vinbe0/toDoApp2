@@ -9,6 +9,7 @@ export interface CreateTaskInput {
   dueDate?: string | null;
   priority?: Priority;
   labels?: Label[];
+  completed?: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -51,7 +52,7 @@ export class TaskService {
       dueDate: input.dueDate ?? null,
       priority: input.priority ?? "low",
       labels: input.labels ?? [],
-      completed: false,
+      completed: input.completed ?? false,
       position,
       userId,
     });

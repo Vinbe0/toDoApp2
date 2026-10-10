@@ -24,6 +24,11 @@ describe("task mappers", () => {
     });
   });
 
+  it("keeps the completed state when creating (guest import)", () => {
+    expect(toApiCreateTask({ text: "Done", completed: true }).completed).toBe(true);
+    expect(toApiCreateTask({ text: "New" })).not.toHaveProperty("completed");
+  });
+
   it("maps labels in both directions", () => {
     expect(toUiTask({ id: "1", title: "x", labels: ["work", "shopping"] }).labels).toEqual([
       "work",

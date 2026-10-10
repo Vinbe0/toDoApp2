@@ -15,6 +15,11 @@ describe("TaskService", () => {
     expect(task).toMatchObject({ title: "Ship it", priority: "low", completed: false });
   });
 
+  it("can create a task that is already completed", async () => {
+    const task = await service.createTask("u1", { title: "Done already", completed: true });
+    expect(task.completed).toBe(true);
+  });
+
   it("rejects an empty title", async () => {
     await expect(service.createTask("u1", { title: " " })).rejects.toBeInstanceOf(ValidationError);
   });

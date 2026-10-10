@@ -31,6 +31,7 @@ export function toApiCreateTask(draft: Partial<Task>) {
     dueDate: draft.deadline ?? null,
     priority: draft.priority ?? "low",
     labels: draft.labels ?? [],
+    ...(draft.completed !== undefined ? { completed: draft.completed } : {}),
   };
 }
 

@@ -35,14 +35,13 @@ export const createTaskSchema = z
       .array(z.enum(ALLOWED_LABELS as [string, ...string[]]))
       .max(10)
       .optional(),
+    // Allowed on create so already-done tasks (e.g. imported from guest mode) stay done.
+    completed: z.boolean().optional(),
   })
   .strict();
 
 export const updateTaskSchema = createTaskSchema
   .partial()
-  .extend({
-    completed: z.boolean().optional(),
-  })
   .strict()
   .refine((body) => Object.keys(body).length > 0, "Provide at least one field to update");
 

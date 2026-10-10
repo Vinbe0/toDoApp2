@@ -200,6 +200,14 @@ describe("tasks store", () => {
       expect(await local.list()).toEqual([]);
     });
 
+    it("keeps completed guest tasks completed after import", async () => {
+      const store = await setup(["Done"]);
+      await store.toggle("local-1");
+
+      await store.importGuestTasks(() => true);
+      expect((await api.list())[0]?.completed).toBe(true);
+    });
+
     it("keeps guest tasks when the import is declined", async () => {
       const store = await setup(["One"]);
       expect(await store.importGuestTasks(() => false)).toBe(0);
