@@ -1,6 +1,7 @@
 import type { Task } from "@/features/tasks/model/types";
 
-export type NewTask = Omit<Task, "id" | "completed">;
+/** New tasks start open unless `completed` says otherwise (e.g. when importing). */
+export type NewTask = Omit<Task, "id" | "completed"> & { completed?: boolean };
 export type TaskPatch = Partial<Omit<Task, "id">>;
 
 /**
@@ -12,6 +13,6 @@ export interface TaskRepository {
   create(input: NewTask): Promise<Task>;
   update(id: string, patch: TaskPatch): Promise<Task>;
   remove(id: string): Promise<void>;
-  /** Persists a manual ordering. Backends without ordering may ignore it. */
+  /** Persists a manual ordering of the given task ids. */
   reorder(orderedIds: string[]): Promise<void>;
 }

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { authApi } from "@/features/auth/api/authApi";
+import { HttpError, NetworkError } from "@/shared/api";
 import { useAuthStore } from "../authStore";
 
 vi.mock("@/features/auth/api/authApi", () => ({
-  authApi: { login: vi.fn(), register: vi.fn() },
+  authApi: { login: vi.fn(), register: vi.fn(), me: vi.fn() },
 }));
 
 const session = { token: "jwt-token", user: { id: "u1", email: "me@example.com" } };
@@ -14,6 +15,7 @@ describe("auth store", () => {
     localStorage.clear();
     vi.mocked(authApi.login).mockReset();
     vi.mocked(authApi.register).mockReset();
+    vi.mocked(authApi.me).mockReset();
     setActivePinia(createPinia());
   });
 
@@ -59,6 +61,40 @@ describe("auth store", () => {
     const auth = useAuthStore();
     expect(auth.isRegistered).toBe(true);
     expect(auth.user?.email).toBe("me@example.com");
+  });
+
+  describe("validateSession", () => {
+    beforeEach(() => {
+      localStorage.setItem("token", "saved");
+      localStorage.setItem("auth_user", JSON.stringify(session.user));
+    });
+
+    it("refreshes the user from the server", async () => {
+      vi.mocked(authApi.me).mockResolvedValue({ user: { id: "u1", email: "new@example.com" } });
+      const auth = useAuthStore();
+      await auth.validateSession();
+      expect(auth.user?.email).toBe("new@example.com");
+    });
+
+    it("logs out when the server rejects the token", async () => {
+      vi.mocked(authApi.me).mockRejectedValue(new HttpError("Expired", 401));
+      const auth = useAuthStore();
+      await auth.validateSession();
+      expect(auth.isGuest).toBe(true);
+    });
+
+    it("keeps the session when the server can't be reached", async () => {
+      vi.mocked(authApi.me).mockRejectedValue(new NetworkError("Offline"));
+      const auth = useAuthStore();
+      await auth.validateSession();
+      expect(auth.isRegistered).toBe(true);
+    });
+
+    it("does nothing for guests", async () => {
+      localStorage.clear();
+      await useAuthStore().validateSession();
+      expect(authApi.me).not.toHaveBeenCalled();
+    });
   });
 
   it("logs out and clears the saved session", async () => {

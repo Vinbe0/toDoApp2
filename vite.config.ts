@@ -14,8 +14,10 @@ export default defineConfig({
     },
   },
   server: {
+    // In development the app calls /api on its own origin and Vite forwards
+    // it to the backend, so no CORS setup is needed.
     proxy: {
-      "/api": "http://localhost:3000",
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:3000",
     },
   },
 });

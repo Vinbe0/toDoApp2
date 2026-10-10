@@ -20,7 +20,22 @@ describe("task mappers", () => {
       description: "",
       dueDate: "2026-10-12",
       priority: "high",
+      labels: [],
     });
+  });
+
+  it("keeps the completed state when creating (guest import)", () => {
+    expect(toApiCreateTask({ text: "Done", completed: true }).completed).toBe(true);
+    expect(toApiCreateTask({ text: "New" })).not.toHaveProperty("completed");
+  });
+
+  it("maps labels in both directions", () => {
+    expect(toUiTask({ id: "1", title: "x", labels: ["work", "shopping"] }).labels).toEqual([
+      "work",
+      "shopping",
+    ]);
+    expect(toApiCreateTask({ text: "x", labels: ["university"] }).labels).toEqual(["university"]);
+    expect(toApiUpdateTask({ labels: [] })).toEqual({ labels: [] });
   });
 
   it("only includes changed fields in the update payload", () => {

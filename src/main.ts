@@ -19,5 +19,6 @@ app.use(Toast);
 const auth = useAuthStore();
 http.setTokenProvider(() => auth.token);
 http.onUnauthorized(() => auth.logout());
+void auth.validateSession();
 
 app.mount("#app");

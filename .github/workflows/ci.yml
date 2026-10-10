@@ -6,7 +6,8 @@ on:
   pull_request:
 
 jobs:
-  test-and-build:
+  frontend:
+    name: Frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +18,61 @@ jobs:
       - run: npm ci
       - run: npm run lint:check
       - run: npm run format:check
-      - run: npm run typecheck
       - run: npm test
       - run: npm run build-only
+
+  server:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: todos
+          POSTGRES_PASSWORD: todos
+          POSTGRES_DB: todos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U todos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://todos:todos@localhost:5432/todos_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - name: Check migrations match the schema
+        run: npx drizzle-kit check
+      - run: npm test
+      - run: npm run build
+
+  integration:
+    name: Full-stack integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix server
+      # Type-checks the frontend, unit tests and the cross-project integration tests.
+      - run: npm run typecheck
+      - run: npm run test:integration

@@ -18,8 +18,7 @@ export class ApiTaskRepository implements TaskRepository {
 
   async create(input: NewTask) {
     const created = await this.http.post<ApiTask>("/api/tasks", toApiCreateTask(input));
-    // The API has no labels field yet; keep them for the current session.
-    return { ...toUiTask(created), labels: input.labels };
+    return toUiTask(created);
   }
 
   async update(id: string, patch: TaskPatch) {
@@ -34,7 +33,8 @@ export class ApiTaskRepository implements TaskRepository {
     await this.http.delete(`/api/tasks/${encodeURIComponent(id)}`);
   }
 
-  async reorder() {
-    // The backend does not store a manual order yet.
+  async reorder(orderedIds: string[]) {
+    if (!orderedIds.length) return;
+    await this.http.put("/api/tasks/order", { ids: orderedIds });
   }
 }

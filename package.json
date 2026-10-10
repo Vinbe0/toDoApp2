@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "cross-env PORT=3000 npm run dev --prefix server",
+    "dev:all": "concurrently -n web,api -c green,blue \"npm run dev\" \"npm run dev:server\"",
+    "setup": "npm install && npm install --prefix server",
     "build": "vue-tsc --build && vite build",
     "build-only": "vite build",
     "preview": "vite preview",
@@ -15,7 +18,8 @@
     "lint:check": "eslint . --cache",
     "format": "prettier --write src/ *.ts index.html",
     "format:check": "prettier --check src/ *.ts index.html",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
@@ -36,6 +40,8 @@
     "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.9.1",
+    "concurrently": "^9.2.5",
+    "cross-env": "^7.0.3",
     "eslint": "^9.39.5",
     "eslint-plugin-vue": "^10.11.1",
     "jiti": "^2.7.0",

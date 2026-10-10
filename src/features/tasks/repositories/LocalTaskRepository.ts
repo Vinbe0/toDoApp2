@@ -14,7 +14,7 @@ export class LocalTaskRepository implements TaskRepository {
   }
 
   async create(input: NewTask) {
-    const task: Task = { ...input, id: this.createId(), completed: false };
+    const task: Task = { ...input, id: this.createId(), completed: input.completed ?? false };
     this.write([...this.read(), task]);
     return task;
   }
