@@ -19,7 +19,7 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
     let repos: Repositories;
     let userId: string;
 
-    const newTask = (title: string, position: string) => ({
+    const newTask = (title: string, position: number) => ({
       id: randomUUID(),
       userId,
       title,
@@ -47,7 +47,7 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
 
     it("stores a task with all its fields", async () => {
       const created = await repos.tasks.createTask({
-        ...newTask("Write tests", "a1"),
+        ...newTask("Write tests", 0),
         description: "All of them",
         dueDate: "2026-11-01",
         priority: "high",
@@ -67,8 +67,8 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
     });
 
     it("lists a user's tasks ordered by position", async () => {
-      await repos.tasks.createTask(newTask("Second", "a2"));
-      await repos.tasks.createTask(newTask("First", "a1"));
+      await repos.tasks.createTask(newTask("Second", 1));
+      await repos.tasks.createTask(newTask("First", 0));
 
       const titles = (await repos.tasks.getAllTasks(userId)).map((task) => task.title);
       expect(titles).toEqual(["First", "Second"]);
@@ -76,7 +76,7 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
     });
 
     it("updates only the given fields", async () => {
-      const task = await repos.tasks.createTask(newTask("Draft", "a1"));
+      const task = await repos.tasks.createTask(newTask("Draft", 0));
       const updated = await repos.tasks.updateTask(task.id, { completed: true });
 
       expect(updated).toMatchObject({ title: "Draft", completed: true });
@@ -84,10 +84,22 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
     });
 
     it("deletes tasks and reports whether anything was deleted", async () => {
-      const task = await repos.tasks.createTask(newTask("Temp", "a1"));
+      const task = await repos.tasks.createTask(newTask("Temp", 0));
       expect(await repos.tasks.deleteTask(task.id)).toBe(true);
       expect(await repos.tasks.deleteTask(task.id)).toBe(false);
       expect(await repos.tasks.getTaskById(task.id)).toBeNull();
+    });
+
+    it("reorders only the given user's tasks", async () => {
+      const a = await repos.tasks.createTask(newTask("A", 0));
+      const b = await repos.tasks.createTask(newTask("B", 1));
+      const c = await repos.tasks.createTask(newTask("C", 2));
+
+      await repos.tasks.reorderTasks(userId, [c.id, a.id, b.id]);
+      expect((await repos.tasks.getAllTasks(userId)).map((t) => t.title)).toEqual(["C", "A", "B"]);
+
+      await repos.tasks.reorderTasks(randomUUID(), [b.id, a.id, c.id]);
+      expect((await repos.tasks.getAllTasks(userId)).map((t) => t.title)).toEqual(["C", "A", "B"]);
     });
 
     it("returns null for unknown or malformed ids", async () => {

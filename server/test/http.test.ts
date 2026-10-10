@@ -185,6 +185,33 @@ describe("HTTP API", () => {
       expect((await api.put("/api/tasks/missing").set(auth).send({ title: "x" })).status).toBe(404);
     });
 
+    it("saves a manual order", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+      const ids: string[] = [];
+      for (const title of ["A", "B", "C"]) {
+        ids.push((await api.post("/api/tasks").set(auth).send({ title })).body.id);
+      }
+
+      const res = await api
+        .put("/api/tasks/order")
+        .set(auth)
+        .send({ ids: [ids[2], ids[0]] });
+      expect(res.status).toBe(200);
+      expect(res.body.map((t: { title: string }) => t.title)).toEqual(["C", "A", "B"]);
+      const list = await api.get("/api/tasks").set(auth);
+      expect(list.body.map((t: { title: string }) => t.title)).toEqual(["C", "A", "B"]);
+
+      expect(
+        (
+          await api
+            .put("/api/tasks/order")
+            .set(auth)
+            .send({ ids: ["nope"] })
+        ).status,
+      ).toBe(400);
+    });
+
     it("only lists the signed-in user's tasks", async () => {
       const { api, signUp } = createTestApp();
       const alice = await signUp();

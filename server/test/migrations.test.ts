@@ -31,6 +31,35 @@ describe("migrations", () => {
     expect(rows.map((r) => r.column_name)).not.toContain("label");
   });
 
+  it("convert text positions to integers, keeping each user's order", async () => {
+    db = new PGlite();
+    const before = migrations.filter((file) => file < "0003");
+    const after = migrations.filter((file) => file >= "0003");
+    for (const file of before) await runMigration(db, file);
+
+    await db.exec(`
+      INSERT INTO users (id, email, password_hash) VALUES
+        ('00000000-0000-0000-0000-000000000001', 'a@b.co', 'x'),
+        ('00000000-0000-0000-0000-000000000002', 'c@d.co', 'x');
+      INSERT INTO tasks (id, user_id, title, position) VALUES
+        ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-000000000001', 'A2', 'a2'),
+        ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-000000000001', 'B0', 'b0'),
+        ('00000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-000000000001', 'A1', 'a1'),
+        ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-000000000002', 'Other', 'a5');
+    `);
+    for (const file of after) await runMigration(db, file);
+
+    const { rows } = await db.query<{ title: string; position: number }>(
+      "SELECT title, position FROM tasks ORDER BY user_id, position",
+    );
+    expect(rows).toEqual([
+      { title: "A1", position: 0 },
+      { title: "A2", position: 1 },
+      { title: "B0", position: 2 },
+      { title: "Other", position: 0 },
+    ]);
+  });
+
   it("keep each task's old single label when moving to multiple labels", async () => {
     db = new PGlite();
     const [init, ...rest] = migrations;

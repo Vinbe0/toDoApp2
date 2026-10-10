@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Task } from "./task.js";
 
-const valid = { id: "1", userId: "u1", title: "Write tests", position: "a1" };
+const valid = { id: "1", userId: "u1", title: "Write tests", position: 0 };
 
 describe("Task", () => {
   it("applies defaults", () => {
@@ -19,6 +19,7 @@ describe("Task", () => {
     [{ dueDate: "not a date" }, "Invalid due date"],
     [{ priority: "urgent" }, "Invalid priority"],
     [{ labels: ["work", "gym"] }, "Invalid label"],
+    [{ position: -1 }, "Position must be a non-negative integer"],
   ])("rejects %j", (overrides, message) => {
     expect(() => new Task({ ...valid, ...(overrides as object) })).toThrow(message);
   });

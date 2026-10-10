@@ -57,6 +57,33 @@ describe("TaskService", () => {
     await expect(service.deleteTask("u2", task.id)).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("appends new tasks at the end", async () => {
+    const first = await service.createTask("u1", { title: "First" });
+    const second = await service.createTask("u1", { title: "Second" });
+    expect([first.position, second.position]).toEqual([0, 1]);
+  });
+
+  it("reorders tasks; unlisted tasks keep their order after the listed ones", async () => {
+    const ids: string[] = [];
+    for (const title of ["A", "B", "C", "D"]) {
+      ids.push((await service.createTask("u1", { title })).id);
+    }
+    const [, b, , d] = ids;
+
+    const reordered = await service.reorderTasks("u1", [d!, b!]);
+    expect(reordered.map((t) => t.title)).toEqual(["D", "B", "A", "C"]);
+  });
+
+  it("rejects reordering with duplicate or foreign ids", async () => {
+    const mine = await service.createTask("u1", { title: "Mine" });
+    const theirs = await service.createTask("u2", { title: "Theirs" });
+
+    await expect(service.reorderTasks("u1", [mine.id, mine.id])).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    await expect(service.reorderTasks("u1", [theirs.id])).rejects.toBeInstanceOf(NotFoundError);
+  });
+
   it("deletes a task", async () => {
     const task = await service.createTask("u1", { title: "Temp" });
     await service.deleteTask("u1", task.id);

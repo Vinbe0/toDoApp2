@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { TaskRepository } from "../../domain/repositories.js";
 import { Task, type TaskProps } from "../../domain/task.js";
 import type { Database } from "../db/client.js";
@@ -81,6 +81,18 @@ export class DrizzleTaskRepository implements TaskRepository {
       .where(eq(tasks.id, id))
       .returning();
     return row ? toTask(row) : null;
+  }
+
+  async reorderTasks(userId: string, orderedIds: string[]): Promise<void> {
+    // One transaction: the list is never left half-reordered.
+    await this.db.transaction(async (tx) => {
+      for (const [position, id] of orderedIds.entries()) {
+        await tx
+          .update(tasks)
+          .set({ position })
+          .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+      }
+    });
   }
 
   async deleteTask(id: string): Promise<boolean> {

@@ -10,7 +10,7 @@ export interface TaskProps {
   id: string;
   userId: string;
   title: string;
-  position: string;
+  position: number;
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
@@ -29,8 +29,8 @@ export class Task {
   priority: Priority;
   labels: Label[];
   completed: boolean;
-  /** Lexicographic sort key within the owner's list. */
-  position: string;
+  /** 0-based place in the owner's list; lower comes first. */
+  position: number;
 
   constructor({
     id,
@@ -59,6 +59,9 @@ export class Task {
   private validate(): void {
     if (!this.title || this.title.trim() === "") {
       throw new ValidationError("Task title cannot be empty");
+    }
+    if (!Number.isInteger(this.position) || this.position < 0) {
+      throw new ValidationError("Position must be a non-negative integer");
     }
     if (this.dueDate && isNaN(Date.parse(this.dueDate))) {
       throw new ValidationError("Invalid due date. Expected a valid date string or null.");

@@ -18,7 +18,6 @@ export interface UpdateTaskInput {
   priority?: Priority;
   labels?: Label[];
   completed?: boolean;
-  position?: string;
 }
 
 /** Task use cases: list, create, update and delete a user's tasks. */
@@ -41,8 +40,9 @@ export class TaskService {
       throw new ValidationError("Task title cannot be empty");
     }
 
+    // New tasks go to the end of the list.
     const existingTasks = await this.taskRepository.getAllTasks(userId);
-    const lastPosition = existingTasks.at(-1)?.position ?? "a0";
+    const position = Math.max(-1, ...existingTasks.map((task) => task.position)) + 1;
 
     return this.taskRepository.createTask({
       id: randomUUID(),
@@ -52,7 +52,7 @@ export class TaskService {
       priority: input.priority ?? "low",
       labels: input.labels ?? [],
       completed: false,
-      position: TaskService.incrementPosition(lastPosition),
+      position,
       userId,
     });
   }
@@ -74,6 +74,27 @@ export class TaskService {
   }
 
   /**
+   * Saves a manual order. orderedIds may list only some of the user's tasks
+   * (e.g. a filtered view): those go first in the given order, the rest keep
+   * their relative order after them.
+   */
+  async reorderTasks(userId: string, orderedIds: string[]): Promise<Task[]> {
+    if (new Set(orderedIds).size !== orderedIds.length) {
+      throw new ValidationError("Task ids must be unique");
+    }
+
+    const tasks = await this.taskRepository.getAllTasks(userId);
+    const owned = new Set(tasks.map((task) => task.id));
+    const unknown = orderedIds.find((id) => !owned.has(id));
+    if (unknown) throw new NotFoundError("Task", unknown);
+
+    const listed = new Set(orderedIds);
+    const rest = tasks.filter((task) => !listed.has(task.id)).map((task) => task.id);
+    await this.taskRepository.reorderTasks(userId, [...orderedIds, ...rest]);
+    return this.taskRepository.getAllTasks(userId);
+  }
+
+  /**
    * Loads a task only if it belongs to the user. Other users' tasks are
    * reported as not found, so their existence isn't revealed.
    */
@@ -81,13 +102,5 @@ export class TaskService {
     const task = await this.taskRepository.getTaskById(taskId);
     if (!task || !task.isOwnedBy(userId)) throw new NotFoundError("Task", taskId);
     return task;
-  }
-
-  /** "a0" → "a1", "a9" → "b0": appends to the end without renumbering. */
-  private static incrementPosition(pos: string): string {
-    const letter = pos[0] ?? "a";
-    const num = parseInt(pos.slice(1), 10);
-    if (num < 9) return `${letter}${num + 1}`;
-    return `${String.fromCharCode(letter.charCodeAt(0) + 1)}0`;
   }
 }

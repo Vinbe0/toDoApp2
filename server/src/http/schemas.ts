@@ -42,10 +42,13 @@ export const updateTaskSchema = createTaskSchema
   .partial()
   .extend({
     completed: z.boolean().optional(),
-    position: z.string().min(1).max(64).optional(),
   })
   .strict()
   .refine((body) => Object.keys(body).length > 0, "Provide at least one field to update");
+
+export const reorderTasksSchema = z
+  .object({ ids: z.array(z.string().uuid("Invalid task id")).min(1).max(1000) })
+  .strict();
 
 export const taskQuerySchema = z.object({
   label: z.enum(ALLOWED_LABELS as [string, ...string[]]).optional(),

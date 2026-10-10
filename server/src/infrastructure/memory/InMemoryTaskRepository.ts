@@ -12,7 +12,7 @@ export class InMemoryTaskRepository implements TaskRepository {
     return Array.from(taskIds)
       .map((id) => this.tasks.get(id))
       .filter((task): task is Task => task !== undefined)
-      .sort((a, b) => a.position.localeCompare(b.position));
+      .sort((a, b) => a.position - b.position);
   }
 
   async getTaskById(id: string): Promise<Task | null> {
@@ -38,6 +38,13 @@ export class InMemoryTaskRepository implements TaskRepository {
     if (!task) return null;
     Object.assign(task, updatedData);
     return task;
+  }
+
+  async reorderTasks(userId: string, orderedIds: string[]): Promise<void> {
+    orderedIds.forEach((id, position) => {
+      const task = this.tasks.get(id);
+      if (task?.isOwnedBy(userId)) task.position = position;
+    });
   }
 
   async deleteTask(id: string): Promise<boolean> {

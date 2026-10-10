@@ -11,6 +11,8 @@ export interface TaskRepository {
     updatedData: Partial<Omit<TaskProps, "id" | "userId">>,
   ): Promise<Task | null>;
   deleteTask(id: string): Promise<boolean>;
+  /** Sets each task's position to its index in orderedIds (all owned by userId). */
+  reorderTasks(userId: string, orderedIds: string[]): Promise<void>;
 }
 
 export interface UserRepository {

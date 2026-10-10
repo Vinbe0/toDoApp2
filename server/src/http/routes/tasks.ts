@@ -2,7 +2,12 @@ import { Router, type RequestHandler } from "express";
 import type { TaskService } from "../../application/TaskService.js";
 import { validate } from "../middleware/validate.js";
 import { toTaskResponse } from "../presenters.js";
-import { createTaskSchema, taskQuerySchema, updateTaskSchema } from "../schemas.js";
+import {
+  createTaskSchema,
+  reorderTasksSchema,
+  taskQuerySchema,
+  updateTaskSchema,
+} from "../schemas.js";
 
 export function createTasksRouter(taskService: TaskService, authenticate: RequestHandler) {
   const router = Router();
@@ -22,6 +27,16 @@ export function createTasksRouter(taskService: TaskService, authenticate: Reques
     try {
       const task = await taskService.createTask(req.user!.userId, req.body);
       res.status(201).json(toTaskResponse(task));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Must be registered before PUT /:id, or "order" would be read as an id.
+  router.put("/order", validate(reorderTasksSchema), async (req, res, next) => {
+    try {
+      const tasks = await taskService.reorderTasks(req.user!.userId, req.body.ids);
+      res.json(tasks.map(toTaskResponse));
     } catch (error) {
       next(error);
     }
