@@ -69,3 +69,7 @@ export const updateLabelSchema = z
   .object({ name: labelName.optional(), color: labelColor.optional() })
   .strict()
   .refine((body) => Object.keys(body).length > 0, "Provide a name or a colour");
+
+export const deleteAccountSchema = z
+  .object({ password: z.string().min(1, "Enter your password to confirm").max(128) })
+  .strict();

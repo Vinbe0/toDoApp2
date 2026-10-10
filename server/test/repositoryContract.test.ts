@@ -179,6 +179,40 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
       });
     });
 
+    it("deletes everything a user owns, and only that", async () => {
+      const otherUser = randomUUID();
+      await repos.users.createUser({
+        id: otherUser,
+        email: `${otherUser}@example.com`,
+        passwordHash: "hash",
+      });
+      const myLabel = await label("Mine");
+      await repos.tasks.createTask({ ...newTask("Mine", 0), labelIds: [myLabel.id] });
+      await repos.tasks.createTask({
+        id: randomUUID(),
+        userId: otherUser,
+        title: "Theirs",
+        position: 0,
+      });
+      await repos.labels.createLabel({
+        id: randomUUID(),
+        userId: otherUser,
+        name: "Theirs",
+        color: "red",
+      });
+
+      await repos.tasks.deleteAllTasks(userId);
+      await repos.labels.deleteAllLabels(userId);
+      expect(await repos.users.deleteUser(userId)).toBe(true);
+      expect(await repos.users.deleteUser(userId)).toBe(false);
+
+      expect(await repos.users.getUserById(userId)).toBeNull();
+      expect(await repos.tasks.getAllTasks(userId)).toEqual([]);
+      expect(await repos.labels.listLabels(userId)).toEqual([]);
+      expect(await repos.tasks.getAllTasks(otherUser)).toHaveLength(1);
+      expect(await repos.labels.listLabels(otherUser)).toHaveLength(1);
+    });
+
     it("returns null for unknown or malformed ids", async () => {
       expect(await repos.tasks.getTaskById(randomUUID())).toBeNull();
       expect(await repos.tasks.getTaskById("not-a-uuid")).toBeNull();

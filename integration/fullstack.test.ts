@@ -2,6 +2,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // Backend
+import { AccountService } from "../server/src/application/AccountService.js";
 import { AuthService } from "../server/src/application/AuthService.js";
 import { LabelService } from "../server/src/application/LabelService.js";
 import { TaskService } from "../server/src/application/TaskService.js";
@@ -31,12 +32,20 @@ beforeAll(async () => {
   const labelRepository = new DrizzleLabelRepository(database.db);
   const taskRepository = new DrizzleTaskRepository(database.db);
   const labelService = new LabelService(labelRepository, taskRepository);
+  const userRepository = new DrizzleUserRepository(database.db);
+  const passwordHasher = new BcryptPasswordHasher(4);
   const app = createApp({
     labelService,
     taskService: new TaskService(taskRepository, labelRepository),
+    accountService: new AccountService(
+      userRepository,
+      taskRepository,
+      labelRepository,
+      passwordHasher,
+    ),
     authService: new AuthService(
-      new DrizzleUserRepository(database.db),
-      new BcryptPasswordHasher(4),
+      userRepository,
+      passwordHasher,
       new JwtTokenService("integration-secret"),
       (userId) => labelService.createDefaultLabels(userId),
     ),

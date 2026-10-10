@@ -80,6 +80,53 @@ describe("HTTP API", () => {
       expect(res.status).toBe(401);
     });
 
+    describe("deleting an account", () => {
+      it("deletes the account, its data and makes old tokens stop working", async () => {
+        const { api, signUp } = createTestApp();
+        const { email, auth } = await signUp();
+        await api.post("/api/tasks").set(auth).send({ title: "Mine" });
+
+        const res = await api.delete("/api/auth/me").set(auth).send({ password: "password123" });
+        expect(res.status).toBe(204);
+
+        // The token is still well-formed and unexpired, but the account is gone.
+        expect((await api.get("/api/tasks").set(auth)).status).toBe(401);
+        expect((await api.post("/api/tasks").set(auth).send({ title: "x" })).status).toBe(401);
+        expect((await api.get("/api/auth/me").set(auth)).status).toBe(401);
+        const login = await api.post("/api/auth/login").send({ email, password: "password123" });
+        expect(login.status).toBe(401);
+      });
+
+      it("allows signing up again with the same email afterwards", async () => {
+        const { api, signUp } = createTestApp();
+        const { email, auth } = await signUp();
+        await api.delete("/api/auth/me").set(auth).send({ password: "password123" });
+
+        const again = await api.post("/api/auth/register").send({ email, password: "password123" });
+        expect(again.status).toBe(201);
+      });
+
+      it("returns 403 for a wrong password (not 401, which would log the user out)", async () => {
+        const { api, signUp } = createTestApp();
+        const { auth } = await signUp();
+
+        const res = await api.delete("/api/auth/me").set(auth).send({ password: "wrong-password" });
+        expect(res.status).toBe(403);
+        expect(res.body.message).toBe("Incorrect password");
+        expect((await api.get("/api/auth/me").set(auth)).status).toBe(200);
+      });
+
+      it("requires a password and a token", async () => {
+        const { api, signUp } = createTestApp();
+        const { auth } = await signUp();
+
+        expect((await api.delete("/api/auth/me").set(auth).send({})).status).toBe(400);
+        expect((await api.delete("/api/auth/me").send({ password: "password123" })).status).toBe(
+          401,
+        );
+      });
+    });
+
     it("returns 409 for an existing email and 401 for bad credentials", async () => {
       const { api, signUp } = createTestApp();
       const { email } = await signUp();

@@ -1,3 +1,4 @@
+import { AccountService } from "./application/AccountService.js";
 import { AuthService } from "./application/AuthService.js";
 import { LabelService } from "./application/LabelService.js";
 import { TaskService } from "./application/TaskService.js";
@@ -18,9 +19,17 @@ const labelRepository = new DrizzleLabelRepository(database.db);
 const taskRepository = new DrizzleTaskRepository(database.db);
 const labelService = new LabelService(labelRepository, taskRepository);
 const taskService = new TaskService(taskRepository, labelRepository);
+const userRepository = new DrizzleUserRepository(database.db);
+const passwordHasher = new BcryptPasswordHasher();
+const accountService = new AccountService(
+  userRepository,
+  taskRepository,
+  labelRepository,
+  passwordHasher,
+);
 const authService = new AuthService(
-  new DrizzleUserRepository(database.db),
-  new BcryptPasswordHasher(),
+  userRepository,
+  passwordHasher,
   new JwtTokenService(config.jwtSecret, config.jwtExpiresIn),
   (userId) => labelService.createDefaultLabels(userId),
 );
@@ -28,6 +37,7 @@ const authService = new AuthService(
 const app = createApp({
   taskService,
   authService,
+  accountService,
   labelService,
   corsOrigins: config.corsOrigins,
   simulateLatency: config.simulateLatency,

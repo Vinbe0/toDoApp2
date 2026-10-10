@@ -77,6 +77,10 @@ export class DrizzleLabelRepository implements LabelRepository {
     return next;
   }
 
+  async deleteAllLabels(userId: string): Promise<void> {
+    await this.db.delete(labels).where(eq(labels.userId, userId));
+  }
+
   async deleteLabel(id: string): Promise<boolean> {
     if (!UUID.test(id)) return false;
     const deleted = await this.db

@@ -16,12 +16,14 @@ export interface TaskRepository {
   reorderTasks(userId: string, orderedIds: string[]): Promise<void>;
   /** Removes a (deleted) label from every task that had it. */
   removeLabelFromTasks(labelId: string): Promise<void>;
+  deleteAllTasks(userId: string): Promise<void>;
 }
 
 export interface UserRepository {
   getUserById(id: string): Promise<User | null>;
   getUserByEmail(email: string): Promise<User | null>;
   createUser(userData: UserProps): Promise<User>;
+  deleteUser(id: string): Promise<boolean>;
 }
 
 export interface LabelRepository {
@@ -37,4 +39,5 @@ export interface LabelRepository {
   ): Promise<Label | null>;
   /** Deleting a label also removes it from every task. */
   deleteLabel(id: string): Promise<boolean>;
+  deleteAllLabels(userId: string): Promise<void>;
 }

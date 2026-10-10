@@ -20,4 +20,12 @@ export class InMemoryUserRepository implements UserRepository {
     this.usersByEmail.set(user.email.address.toLowerCase(), user);
     return user;
   }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const user = this.usersById.get(id);
+    if (!user) return false;
+    this.usersById.delete(id);
+    this.usersByEmail.delete(user.email.address.toLowerCase());
+    return true;
+  }
 }

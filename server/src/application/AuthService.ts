@@ -69,6 +69,18 @@ export class AuthService {
     return this.tokenService.verify(token);
   }
 
+  /**
+   * Verifies a token and that its account still exists, so tokens issued
+   * before an account was deleted stop working right away.
+   */
+  async authenticate(token: string): Promise<TokenPayload> {
+    const payload = this.tokenService.verify(token);
+    if (!(await this.userRepository.getUserById(payload.userId))) {
+      throw new UnauthorizedError("Account no longer exists");
+    }
+    return payload;
+  }
+
   private issueToken(userId: string, email: string): AuthResult {
     return { token: this.tokenService.sign({ userId, email }), user: { id: userId, email } };
   }

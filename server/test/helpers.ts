@@ -1,4 +1,5 @@
 import request from "supertest";
+import { AccountService } from "../src/application/AccountService.js";
 import { AuthService } from "../src/application/AuthService.js";
 import { LabelService } from "../src/application/LabelService.js";
 import { TaskService } from "../src/application/TaskService.js";
@@ -18,6 +19,7 @@ export function createTestServices() {
   const labelRepository = new InMemoryLabelRepository();
   const tokenService = new JwtTokenService(TEST_SECRET);
   const labelService = new LabelService(labelRepository, taskRepository);
+  const passwordHasher = new BcryptPasswordHasher(4);
   return {
     taskRepository,
     userRepository,
@@ -25,7 +27,13 @@ export function createTestServices() {
     tokenService,
     labelService,
     taskService: new TaskService(taskRepository, labelRepository),
-    authService: new AuthService(userRepository, new BcryptPasswordHasher(4), tokenService, (id) =>
+    accountService: new AccountService(
+      userRepository,
+      taskRepository,
+      labelRepository,
+      passwordHasher,
+    ),
+    authService: new AuthService(userRepository, passwordHasher, tokenService, (id) =>
       labelService.createDefaultLabels(id),
     ),
   };
