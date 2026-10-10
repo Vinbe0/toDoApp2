@@ -1,52 +1,13 @@
 <script setup lang="ts">
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import type { Task } from "@/features/tasks/model/types";
-
-/** A local calendar date relative to today, as YYYY-MM-DD. */
-const day = (offset: number) => {
-  const date = new Date();
-  date.setDate(date.getDate() + offset);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-};
+import { sampleTasks } from "@/features/home/data/sampleTasks";
 
 const tasks: Task[] = [
-  {
-    id: "1",
-    text: "Submit the lab report",
-    description: "Include the measurements from Tuesday",
-    deadline: day(-1),
-    priority: "high",
-    labels: ["university"],
-    completed: false,
-  },
-  {
-    id: "2",
-    text: "Review the pull request",
-    description: "",
-    deadline: day(0),
-    priority: "medium",
-    labels: ["work"],
-    completed: false,
-  },
-  {
-    id: "3",
-    text: "Buy coffee beans",
-    description: "",
-    deadline: day(3),
-    priority: "low",
-    labels: ["shopping"],
-    completed: false,
-  },
-  {
-    id: "4",
-    text: "Set up the project",
-    description: "",
-    deadline: null,
-    priority: "medium",
-    labels: ["work"],
-    completed: true,
-  },
+  sampleTasks.labReport,
+  sampleTasks.pullRequest,
+  sampleTasks.coffee,
+  sampleTasks.setup,
 ];
 
 const views = [
