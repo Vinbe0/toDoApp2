@@ -115,21 +115,30 @@ repositoryContract("in-memory", async () => ({
   users: new InMemoryUserRepository(),
 }));
 
-let connection: DatabaseConnection;
+/** Runs the contract against a Drizzle database, emptied before each test. */
+function databaseContract(name: string, options: Parameters<typeof connectDatabase>[0]) {
+  let connection: DatabaseConnection;
 
-beforeAll(async () => {
-  connection = await connectDatabase({ pgliteDataDir: "memory://" });
-});
+  beforeAll(async () => {
+    connection = await connectDatabase(options);
+  });
 
-afterAll(async () => {
-  await connection.close();
-});
+  afterAll(async () => {
+    await connection.close();
+  });
 
-repositoryContract("PostgreSQL (PGlite)", async () => {
-  await connection.db.delete(tasks);
-  await connection.db.delete(users);
-  return {
-    tasks: new DrizzleTaskRepository(connection.db),
-    users: new DrizzleUserRepository(connection.db),
-  };
-});
+  repositoryContract(name, async () => {
+    await connection.db.delete(tasks);
+    await connection.db.delete(users);
+    return {
+      tasks: new DrizzleTaskRepository(connection.db),
+      users: new DrizzleUserRepository(connection.db),
+    };
+  });
+}
+
+databaseContract("PostgreSQL (PGlite)", { pgliteDataDir: "memory://" });
+
+// CI also runs the contract against a real PostgreSQL server.
+const testDatabaseUrl = process.env.TEST_DATABASE_URL;
+if (testDatabaseUrl) databaseContract("PostgreSQL (server)", { url: testDatabaseUrl });
