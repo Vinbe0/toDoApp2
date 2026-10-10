@@ -4,7 +4,7 @@
     <main class="flex-1">
       <RouterView />
     </main>
-    <AppFooter />
+    <AppFooter v-if="!route.meta.app" />
   </div>
   <RouterView v-else />
 </template>

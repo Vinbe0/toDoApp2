@@ -8,6 +8,8 @@ declare module "vue-router" {
     title?: string;
     /** Hide the header and footer (full-screen auth pages). */
     bare?: boolean;
+    /** App screens (not marketing pages): no footer. */
+    app?: boolean;
     requiresAuth?: boolean;
     guestOnly?: boolean;
   }
@@ -21,7 +23,7 @@ const router = createRouter({
       path: "/todo",
       name: "tasks",
       component: () => import("@/pages/TasksPage.vue"),
-      meta: { title: "My tasks" },
+      meta: { title: "My tasks", app: true },
     },
     {
       path: "/account",

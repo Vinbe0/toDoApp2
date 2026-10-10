@@ -81,6 +81,16 @@ export function countTasks(tasks: readonly Task[]) {
   return { all: tasks.length, active: tasks.length - completed, completed };
 }
 
+/** Open (not completed) tasks per label. */
+export function countOpenByLabel(tasks: readonly Task[], labels: readonly Label[]) {
+  const counts = Object.fromEntries(labels.map((label) => [label, 0])) as Record<Label, number>;
+  for (const task of tasks) {
+    if (task.completed) continue;
+    for (const label of task.labels) if (label in counts) counts[label] += 1;
+  }
+  return counts;
+}
+
 /**
  * Applies a reorder of a visible subset back onto the full list:
  * hidden tasks keep their slots, visible ones take the new order.

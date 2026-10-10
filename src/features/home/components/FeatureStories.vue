@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BaseBadge from "@/shared/ui/BaseBadge.vue";
 import FeatureStory from "@/features/home/components/FeatureStory.vue";
-import TaskFilters from "@/features/tasks/components/TaskFilters.vue";
+import TaskSidebar from "@/features/tasks/components/TaskSidebar.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import { sampleTasks } from "@/features/home/data/sampleTasks";
 import { createDefaultQuery } from "@/features/tasks/model/query";
@@ -32,16 +32,18 @@ const filterQuery = {
     <FeatureStory
       eyebrow="Filters"
       title="Narrow it down in a couple of clicks."
-      text="Search, status, labels and sort order all work together: active work tasks sorted by priority is one click each, and Reset brings everything back."
+      text="Views, labels and search work together: active work tasks is two clicks, and the View menu sorts by deadline or priority."
       tint="cream"
       reverse
     >
       <div class="mx-auto max-w-xs p-5">
-        <TaskFilters
+        <TaskSidebar
           :query="filterQuery"
           :labels="LABELS"
           :counts="{ all: 5, active: 4, completed: 1 }"
-          class="!border-0 !p-0 !shadow-none"
+          :label-counts="{ work: 3, shopping: 1, university: 1 }"
+          account-name="Guest"
+          account-hint="Saved in this browser"
         />
       </div>
     </FeatureStory>

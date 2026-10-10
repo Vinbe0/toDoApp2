@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyReorder,
+  countOpenByLabel,
   countTasks,
   createDefaultQuery,
   isQueryActive,
@@ -112,6 +113,19 @@ describe("helpers", () => {
       all: 3,
       active: 2,
       completed: 1,
+    });
+  });
+
+  it("counts open tasks per label", () => {
+    const list = [
+      task({ labels: ["work"] }),
+      task({ labels: ["work", "shopping"] }),
+      task({ labels: ["work"], completed: true }),
+    ];
+    expect(countOpenByLabel(list, ["work", "shopping", "university"])).toEqual({
+      work: 2,
+      shopping: 1,
+      university: 0,
     });
   });
 

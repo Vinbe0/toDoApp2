@@ -38,6 +38,16 @@ const toggleLabel = (label: Label) => {
     : [...labels, label];
 };
 
+const form = ref<{ $el: HTMLElement } | null>(null);
+
+/** Moves the cursor into the title field (used by the sidebar's "Add task"). */
+function focus() {
+  showDetails.value = true;
+  form.value?.$el.querySelector<HTMLInputElement>('input[aria-label="Task title"]')?.focus();
+}
+
+defineExpose({ focus });
+
 const submit = async () => {
   if (!draft.value.text.trim() || saving.value) return;
   saving.value = true;
@@ -53,7 +63,7 @@ const submit = async () => {
 </script>
 
 <template>
-  <BaseCard as="form" class="grid gap-4" @submit.prevent="submit">
+  <BaseCard ref="form" as="form" class="grid gap-4" @submit.prevent="submit">
     <div class="flex gap-2">
       <BaseInput
         v-model="draft.text"
