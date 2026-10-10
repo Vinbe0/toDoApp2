@@ -1,36 +1,32 @@
 import { computed, ref } from "vue";
 import { authApi, type AuthUser } from "@/features/auth/api/authApi";
+import { persistedSession, type AppMode } from "@/features/auth/model/session";
 import { http } from "@/shared/api";
 
-type AppMode = "guest" | "registered";
-const MODE_KEY = "app_mode";
-
-const token = ref<string | null>(localStorage.getItem("token"));
-const user = ref<AuthUser | null>(JSON.parse(localStorage.getItem("auth_user") || "null"));
-const mode = ref<AppMode>(
-  token.value ? "registered" : (localStorage.getItem(MODE_KEY) as AppMode) || "guest",
-);
+const token = ref<string | null>(persistedSession.token.get());
+const user = ref<AuthUser | null>(persistedSession.user.get());
+const mode = ref<AppMode>(token.value ? "registered" : (persistedSession.mode.get() ?? "guest"));
 
 http.setTokenProvider(() => token.value);
 
 function setMode(next: AppMode) {
   mode.value = next;
-  localStorage.setItem(MODE_KEY, next);
+  persistedSession.mode.set(next);
 }
 
 function setSession(newToken: string, newUser: AuthUser) {
   setMode("registered");
   token.value = newToken;
   user.value = newUser;
-  localStorage.setItem("token", newToken);
-  localStorage.setItem("auth_user", JSON.stringify(newUser));
+  persistedSession.token.set(newToken);
+  persistedSession.user.set(newUser);
 }
 
 function clearSession() {
   token.value = null;
   user.value = null;
-  localStorage.removeItem("token");
-  localStorage.removeItem("auth_user");
+  persistedSession.token.remove();
+  persistedSession.user.remove();
 }
 
 export function enterGuestMode() {

@@ -3,9 +3,11 @@ import { useToast } from "vue-toastification";
 import type { FilterMode, Label, Priority, Task } from "@/features/tasks/model/types";
 import { useAuth } from "@/features/auth/composables/useAuth";
 import { tasksApi } from "@/features/tasks/api/tasksApi";
+import { normalizeTaskList } from "@/features/tasks/model/task";
+import { jsonItem } from "@/shared/lib/storage";
 import { HttpError, getErrorMessage } from "@/shared/api";
 
-const GUEST_STORAGE_KEY = "guest-tasks";
+const guestTasksStorage = jsonItem("guest-tasks", normalizeTaskList);
 
 const { isRegistered, logout } = useAuth();
 
@@ -56,44 +58,24 @@ export function useTasks() {
   }
 
   function saveGuestTasks() {
-    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(tasks.value));
+    guestTasksStorage.set(tasks.value);
   }
 
   async function importGuestTasks() {
-    const raw = localStorage.getItem(GUEST_STORAGE_KEY);
-    if (!raw) return;
-    const guestTasks = JSON.parse(raw);
+    const guestTasks = guestTasksStorage.get();
+    if (!guestTasks?.length) return;
 
     const result = window.confirm("Do you want to import your tasks?");
     if (result) {
       for (const task of guestTasks) {
         await tasksApi.createTask(task);
       }
-      localStorage.removeItem(GUEST_STORAGE_KEY);
+      guestTasksStorage.remove();
     }
   }
 
   function loadGuestTasks() {
-    const storedTasks = localStorage.getItem(GUEST_STORAGE_KEY);
-    if (!storedTasks) return;
-
-    try {
-      const parsed = JSON.parse(storedTasks) as Partial<Task>[];
-      tasks.value = parsed.map((task) => ({
-        id: typeof task.id === "string" ? task.id : crypto.randomUUID(),
-        text: typeof task.text === "string" ? task.text : "",
-        description: typeof task.description === "string" ? task.description : "",
-        completed: Boolean(task.completed),
-        deadline: task.deadline ?? null,
-        priority:
-          task.priority === "high" || task.priority === "medium" || task.priority === "low"
-            ? task.priority
-            : "medium",
-        labels: Array.isArray(task.labels) ? task.labels : [],
-      }));
-    } catch {
-      localStorage.removeItem(GUEST_STORAGE_KEY);
-    }
+    tasks.value = guestTasksStorage.get() ?? [];
   }
 
   async function reloadTasks() {

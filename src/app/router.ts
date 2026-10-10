@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { persistedSession } from "@/features/auth/model/session";
 import HomePage from "@/pages/HomePage.vue";
 import PrivacyPage from "@/pages/PrivacyPage.vue";
 import TasksPage from "@/pages/TasksPage.vue";
@@ -74,7 +75,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
-  const token = localStorage.getItem("token");
+  const token = persistedSession.token.get();
   if (to.meta.requiresAuth && !token) return { name: "login" };
   if (to.meta.guestOnly && token) return { name: "account" };
   return true;
