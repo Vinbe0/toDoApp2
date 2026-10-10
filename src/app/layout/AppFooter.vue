@@ -12,7 +12,7 @@ const year = new Date().getFullYear();
     >
       <AppLogo :size="24" class="text-fg" />
       <p>© {{ year }} TODOS. Built with Vue 3 and Tailwind CSS.</p>
-      <RouterLink to="/privacy" class="hover:text-fg">Privacy policy</RouterLink>
+      <RouterLink to="/privacy" class="hover:text-fg">Privacy</RouterLink>
     </div>
   </footer>
 </template>

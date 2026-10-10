@@ -35,7 +35,7 @@ const router = createRouter({
       path: "/privacy",
       name: "privacy",
       component: () => import("@/pages/PrivacyPage.vue"),
-      meta: { title: "Privacy policy" },
+      meta: { title: "Privacy" },
     },
     {
       path: "/first",
