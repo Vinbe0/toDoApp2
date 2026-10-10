@@ -1,7 +1,7 @@
-<script setup>
-import ToDoApp2 from '@/components/ToDoApp2.vue'
+<script setup lang="ts">
+import TaskBoard from "@/components/tasks/TaskBoard.vue";
 </script>
 
 <template>
-    <ToDoApp2 />
+  <TaskBoard />
 </template>

@@ -8,7 +8,7 @@ const { isRegistered } = useAuth();
 const previewTasks = [
   { text: "Finish portfolio README", priority: "High", tone: "red", done: true },
   { text: "Review pull request", priority: "Medium", tone: "amber", done: false },
-  { text: "Plan next sprint", priority: "Low", tone: "brand", done: false },
+  { text: "Plan next sprint", priority: "Low", tone: "blue", done: false },
 ] as const;
 </script>
 
