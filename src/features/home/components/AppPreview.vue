@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import TaskSidebar from "@/features/tasks/components/TaskSidebar.vue";
-import { sampleTasks } from "@/features/home/data/sampleTasks";
+import { sampleLabelsFor, sampleTasks } from "@/features/home/data/sampleTasks";
 import { createDefaultQuery } from "@/features/tasks/model/query";
-import { LABELS } from "@/features/tasks/model/task";
+import { DEFAULT_LABELS } from "@/features/tasks/model/label";
 import type { Task } from "@/features/tasks/model/types";
 
 const tasks: Task[] = [
@@ -20,7 +20,7 @@ const tasks: Task[] = [
     <div class="hidden border-r border-border bg-bg p-4 sm:block">
       <TaskSidebar
         :query="createDefaultQuery()"
-        :labels="LABELS"
+        :labels="DEFAULT_LABELS"
         :counts="{ all: 4, active: 3, completed: 1 }"
         :label-counts="{ work: 1, shopping: 1, university: 1 }"
         account-name="Guest"
@@ -32,7 +32,13 @@ const tasks: Task[] = [
       <p class="text-xl font-bold tracking-tight text-fg">All tasks</p>
       <p class="mt-0.5 mb-3 text-sm text-fg-subtle">3 active · 1 completed</p>
       <ul>
-        <TaskItem v-for="task in tasks" :key="task.id" :task="task" :draggable="false" />
+        <TaskItem
+          v-for="task in tasks"
+          :key="task.id"
+          :task="task"
+          :labels="sampleLabelsFor(task)"
+          :draggable="false"
+        />
       </ul>
       <p class="flex items-center gap-3 py-2.5 text-sm text-fg-muted">
         <span class="grid size-[1.125rem] place-items-center text-brand-600">

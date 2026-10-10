@@ -41,6 +41,16 @@ export class LocalTaskRepository implements TaskRepository {
     this.write([...this.read()].sort((a, b) => rank(a) - rank(b)));
   }
 
+  /** Takes a deleted label off every stored task. */
+  async removeLabel(labelId: string) {
+    this.write(
+      this.read().map((task) => ({
+        ...task,
+        labelIds: task.labelIds.filter((id) => id !== labelId),
+      })),
+    );
+  }
+
   /** Removes all guest tasks (after they were imported into an account). */
   clear() {
     this.storage.remove();

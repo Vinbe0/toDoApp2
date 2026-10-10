@@ -11,7 +11,7 @@ const task = (deadline: string | null, completed = false): Task => ({
   description: "",
   deadline,
   priority: "medium",
-  labels: [],
+  labelIds: [],
   completed,
 });
 

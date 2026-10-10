@@ -19,13 +19,14 @@ const DEMO_ACCOUNT = { email: "demo@example.com", password: "demo-password-123" 
 const inDays = (days: number) =>
   new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 
-const SAMPLE_TASKS: CreateTaskInput[] = [
-  { title: "Finish the portfolio README", priority: "high", dueDate: inDays(1), labels: ["work"] },
-  { title: "Review pull request #3", priority: "medium", dueDate: inDays(2), labels: ["work"] },
-  { title: "Read chapter 4 of Clean Architecture", priority: "low", labels: ["university"] },
-  { title: "Buy coffee beans", priority: "low", labels: ["shopping"] },
-  { title: "Submit the lab report", priority: "high", dueDate: inDays(-1), labels: ["university"] },
-  { title: "Set up the project", priority: "medium", labels: ["work"], completed: true },
+/** Sample tasks; labels are referenced by name and resolved to the account's label ids. */
+const SAMPLE_TASKS: Array<Omit<CreateTaskInput, "labelIds"> & { labels: string[] }> = [
+  { title: "Finish the portfolio README", priority: "high", dueDate: inDays(1), labels: ["Work"] },
+  { title: "Review pull request #3", priority: "medium", dueDate: inDays(2), labels: ["Work"] },
+  { title: "Read chapter 4 of Clean Architecture", priority: "low", labels: ["University"] },
+  { title: "Buy coffee beans", priority: "low", labels: ["Shopping"] },
+  { title: "Submit the lab report", priority: "high", dueDate: inDays(-1), labels: ["University"] },
+  { title: "Set up the project", priority: "medium", labels: ["Work"], completed: true },
 ];
 
 const config = loadConfig();
@@ -36,17 +37,25 @@ try {
   if (await users.getUserByEmail(DEMO_ACCOUNT.email)) {
     console.log(`Demo account ${DEMO_ACCOUNT.email} already exists; nothing to do.`);
   } else {
-    const labels = new LabelService(new DrizzleLabelRepository(database.db));
+    const labelRepository = new DrizzleLabelRepository(database.db);
+    const taskRepository = new DrizzleTaskRepository(database.db);
+    const labels = new LabelService(labelRepository, taskRepository);
     const auth = new AuthService(
       users,
       new BcryptPasswordHasher(),
       new JwtTokenService(config.jwtSecret),
       (userId) => labels.createDefaultLabels(userId),
     );
-    const tasks = new TaskService(new DrizzleTaskRepository(database.db));
+    const tasks = new TaskService(taskRepository, labelRepository);
 
     const { user } = await auth.register(DEMO_ACCOUNT);
-    for (const task of SAMPLE_TASKS) await tasks.createTask(user.id, task);
+    const idByName = new Map((await labels.listLabels(user.id)).map((l) => [l.name, l.id]));
+    for (const { labels: names, ...task } of SAMPLE_TASKS) {
+      await tasks.createTask(user.id, {
+        ...task,
+        labelIds: names.map((name) => idByName.get(name)!),
+      });
+    }
 
     console.log(
       `Created ${DEMO_ACCOUNT.email} (password: ${DEMO_ACCOUNT.password}) with ${SAMPLE_TASKS.length} tasks.`,

@@ -17,14 +17,14 @@ export function createTestServices() {
   const userRepository = new InMemoryUserRepository();
   const labelRepository = new InMemoryLabelRepository();
   const tokenService = new JwtTokenService(TEST_SECRET);
-  const labelService = new LabelService(labelRepository);
+  const labelService = new LabelService(labelRepository, taskRepository);
   return {
     taskRepository,
     userRepository,
     labelRepository,
     tokenService,
     labelService,
-    taskService: new TaskService(taskRepository),
+    taskService: new TaskService(taskRepository, labelRepository),
     authService: new AuthService(userRepository, new BcryptPasswordHasher(4), tokenService, (id) =>
       labelService.createDefaultLabels(id),
     ),

@@ -1,7 +1,6 @@
-import type { Label, Priority, Task } from "./types";
+import type { Priority, Task } from "./types";
 
 export const PRIORITIES: readonly Priority[] = ["high", "medium", "low"];
-export const LABELS: readonly Label[] = ["work", "shopping", "university"];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -19,10 +18,16 @@ export function normalizeTask(data: unknown): Task | null {
     priority: PRIORITIES.includes(data.priority as Priority)
       ? (data.priority as Priority)
       : "medium",
-    labels: Array.isArray(data.labels)
-      ? data.labels.filter((label): label is Label => LABELS.includes(label as Label))
-      : [],
+    // Older versions stored fixed tag names under `labels`; those names are
+    // the ids of the default guest labels, so they carry over as label ids.
+    labelIds: toStringList(data.labelIds ?? data.labels),
   };
+}
+
+function toStringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 export function normalizeTaskList(data: unknown): Task[] | null {

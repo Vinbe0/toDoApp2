@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { NotFoundError, ValidationError } from "../domain/errors.js";
-import type { TaskRepository } from "../domain/repositories.js";
-import { ALLOWED_LABELS, type Label, type Priority, type Task } from "../domain/task.js";
+import type { LabelRepository, TaskRepository } from "../domain/repositories.js";
+import type { Priority, Task } from "../domain/task.js";
 
 export interface CreateTaskInput {
   title: string;
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  labels?: Label[];
+  labelIds?: string[];
   completed?: boolean;
 }
 
@@ -17,29 +17,31 @@ export interface UpdateTaskInput {
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  labels?: Label[];
+  labelIds?: string[];
   completed?: boolean;
 }
 
 /** Task use cases: list, create, update and delete a user's tasks. */
 export class TaskService {
-  constructor(private readonly taskRepository: TaskRepository) {}
+  constructor(
+    private readonly taskRepository: TaskRepository,
+    private readonly labelRepository: LabelRepository,
+  ) {}
 
-  async getAllTasks(userId: string, label?: string): Promise<Task[]> {
+  /** The user's tasks, optionally only those with a given label. */
+  async getAllTasks(userId: string, labelId?: string): Promise<Task[]> {
     const tasks = await this.taskRepository.getAllTasks(userId);
-    if (!label) return tasks;
-    if (!ALLOWED_LABELS.includes(label as Label)) {
-      throw new ValidationError(
-        'Invalid label filter. Expected "work", "shopping", or "university".',
-      );
-    }
-    return tasks.filter((task) => task.hasLabel(label as Label));
+    if (!labelId) return tasks;
+    await this.assertOwnsLabels(userId, [labelId]);
+    return tasks.filter((task) => task.hasLabel(labelId));
   }
 
   async createTask(userId: string, input: CreateTaskInput): Promise<Task> {
     if (!input.title?.trim()) {
       throw new ValidationError("Task title cannot be empty");
     }
+
+    await this.assertOwnsLabels(userId, input.labelIds ?? []);
 
     // New tasks go to the end of the list.
     const existingTasks = await this.taskRepository.getAllTasks(userId);
@@ -51,7 +53,7 @@ export class TaskService {
       description: input.description ?? "",
       dueDate: input.dueDate ?? null,
       priority: input.priority ?? "low",
-      labels: input.labels ?? [],
+      labelIds: input.labelIds ?? [],
       completed: input.completed ?? false,
       position,
       userId,
@@ -63,6 +65,7 @@ export class TaskService {
     if (input.title !== undefined && !input.title.trim()) {
       throw new ValidationError("Task title cannot be empty");
     }
+    await this.assertOwnsLabels(userId, input.labelIds ?? []);
 
     const updated = await this.taskRepository.updateTask(taskId, input);
     if (!updated) throw new NotFoundError("Task", taskId);
@@ -93,6 +96,14 @@ export class TaskService {
     const rest = tasks.filter((task) => !listed.has(task.id)).map((task) => task.id);
     await this.taskRepository.reorderTasks(userId, [...orderedIds, ...rest]);
     return this.taskRepository.getAllTasks(userId);
+  }
+
+  /** Tasks may only use the user's own labels. */
+  private async assertOwnsLabels(userId: string, labelIds: readonly string[]): Promise<void> {
+    if (!labelIds.length) return;
+    const owned = new Set((await this.labelRepository.listLabels(userId)).map((l) => l.id));
+    const unknown = labelIds.find((id) => !owned.has(id));
+    if (unknown) throw new ValidationError(`Unknown label "${unknown}"`);
   }
 
   /**

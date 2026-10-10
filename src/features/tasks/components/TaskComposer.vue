@@ -21,7 +21,7 @@ const createDraft = (): NewTask => ({
   description: "",
   deadline: null,
   priority: "medium",
-  labels: [],
+  labelIds: [],
 });
 
 const open = ref(false);
@@ -43,11 +43,11 @@ const priorityDot: Record<Priority, string> = {
   low: "text-sky-500",
 };
 
-const toggleLabel = (label: Label) => {
-  const labels = draft.value.labels;
-  draft.value.labels = labels.includes(label)
-    ? labels.filter((item) => item !== label)
-    : [...labels, label];
+const toggleLabel = (labelId: string) => {
+  const ids = draft.value.labelIds;
+  draft.value.labelIds = ids.includes(labelId)
+    ? ids.filter((id) => id !== labelId)
+    : [...ids, labelId];
 };
 
 /** Opens the editor and moves the cursor into the title (also used by the sidebar). */
@@ -69,7 +69,7 @@ async function submit() {
   if (!draft.value.text.trim() || saving.value) return;
   saving.value = true;
   try {
-    if (await props.save({ ...draft.value, labels: [...draft.value.labels] })) {
+    if (await props.save({ ...draft.value, labelIds: [...draft.value.labelIds] })) {
       // Stay open so several tasks can be added in a row.
       draft.value = createDraft();
       await nextTick();
@@ -147,10 +147,10 @@ async function submit() {
 
       <LabelChip
         v-for="label in props.labels"
-        :key="label"
+        :key="label.id"
         :label="label"
-        :selected="draft.labels.includes(label)"
-        @toggle="toggleLabel(label)"
+        :selected="draft.labelIds.includes(label.id)"
+        @toggle="toggleLabel(label.id)"
       />
     </div>
 

@@ -15,8 +15,8 @@ export function createTasksRouter(taskService: TaskService, authenticate: Reques
 
   router.get("/", validate(taskQuerySchema, "query"), async (req, res, next) => {
     try {
-      const { label } = res.locals.query as { label?: string };
-      const tasks = await taskService.getAllTasks(req.user!.userId, label);
+      const { labelId } = res.locals.query as { labelId?: string };
+      const tasks = await taskService.getAllTasks(req.user!.userId, labelId);
       res.json(tasks.map(toTaskResponse));
     } catch (error) {
       next(error);

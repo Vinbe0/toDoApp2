@@ -17,6 +17,7 @@ import { BcryptPasswordHasher } from "../server/src/infrastructure/security/Bcry
 import { JwtTokenService } from "../server/src/infrastructure/security/JwtTokenService.js";
 // Frontend
 import { createAuthApi } from "@/features/auth/api/authApi";
+import { ApiLabelRepository } from "@/features/tasks/repositories/ApiLabelRepository";
 import { ApiTaskRepository } from "@/features/tasks/repositories/ApiTaskRepository";
 import { createHttpClient, type HttpClient } from "@/shared/api/httpClient";
 import { HttpError } from "@/shared/api/errors";
@@ -27,10 +28,12 @@ let baseUrl: string;
 
 beforeAll(async () => {
   database = await connectDatabase({ pgliteDataDir: "memory://" });
-  const labelService = new LabelService(new DrizzleLabelRepository(database.db));
+  const labelRepository = new DrizzleLabelRepository(database.db);
+  const taskRepository = new DrizzleTaskRepository(database.db);
+  const labelService = new LabelService(labelRepository, taskRepository);
   const app = createApp({
     labelService,
-    taskService: new TaskService(new DrizzleTaskRepository(database.db)),
+    taskService: new TaskService(taskRepository, labelRepository),
     authService: new AuthService(
       new DrizzleUserRepository(database.db),
       new BcryptPasswordHasher(4),
@@ -58,7 +61,12 @@ async function signIn(email = `${crypto.randomUUID()}@example.com`) {
   const session = await auth.register(email, "password123");
   token = session.token;
 
-  return { client, auth, session, tasks: new ApiTaskRepository(client) };
+  const labels = new ApiLabelRepository(client);
+  /** Id of one of the account's labels, by name. */
+  const labelId = async (name: string) =>
+    (await labels.list()).find((label) => label.name === name)!.id;
+
+  return { client, auth, session, tasks: new ApiTaskRepository(client), labels, labelId };
 }
 
 describe("frontend ↔ backend", () => {
@@ -72,14 +80,16 @@ describe("frontend ↔ backend", () => {
   });
 
   it("round-trips every task field through the API and database", async () => {
-    const { tasks } = await signIn();
+    const { tasks, labelId } = await signIn();
+    const work = await labelId("Work");
+    const university = await labelId("University");
 
     const created = await tasks.create({
       text: "Write the integration test",
       description: "Frontend repository → Express → Postgres",
       deadline: "2026-11-01",
       priority: "high",
-      labels: ["work", "university"],
+      labelIds: [work, university],
     });
 
     expect(await tasks.list()).toEqual([
@@ -89,45 +99,72 @@ describe("frontend ↔ backend", () => {
         description: "Frontend repository → Express → Postgres",
         deadline: "2026-11-01",
         priority: "high",
-        labels: ["work", "university"],
+        labelIds: [work, university],
         completed: false,
       },
     ]);
   });
 
   it("updates, reorders and deletes tasks", async () => {
-    const { tasks } = await signIn();
+    const { tasks, labelId } = await signIn();
+    const shopping = await labelId("Shopping");
     const [a, b, c] = [
       await tasks.create({
         text: "A",
         description: "",
         deadline: null,
         priority: "low",
-        labels: [],
+        labelIds: [],
       }),
       await tasks.create({
         text: "B",
         description: "",
         deadline: null,
         priority: "low",
-        labels: [],
+        labelIds: [],
       }),
       await tasks.create({
         text: "C",
         description: "",
         deadline: null,
         priority: "low",
-        labels: [],
+        labelIds: [],
       }),
     ];
 
-    await tasks.update(a.id, { completed: true, text: "A (done)", labels: ["shopping"] });
+    await tasks.update(a.id, { completed: true, text: "A (done)", labelIds: [shopping] });
     await tasks.reorder([c.id, a.id, b.id]);
     await tasks.remove(b.id);
 
     const list = await tasks.list();
     expect(list.map((task) => task.text)).toEqual(["C", "A (done)"]);
-    expect(list[1]).toMatchObject({ completed: true, labels: ["shopping"] });
+    expect(list[1]).toMatchObject({ completed: true, labelIds: [shopping] });
+  });
+
+  it("manages custom labels, and deleting one removes it from tasks", async () => {
+    const { tasks, labels } = await signIn();
+    expect((await labels.list()).map((label) => label.name)).toEqual([
+      "Work",
+      "Shopping",
+      "University",
+    ]);
+
+    const gym = await labels.create({ name: "Gym", color: "red" });
+    const renamed = await labels.update(gym.id, { name: "Fitness", color: "teal" });
+    expect(renamed).toEqual({ id: gym.id, name: "Fitness", color: "teal" });
+
+    const task = await tasks.create({
+      text: "Run",
+      description: "",
+      deadline: null,
+      priority: "low",
+      labelIds: [gym.id],
+    });
+    await labels.remove(gym.id);
+
+    expect((await tasks.list()).find((t) => t.id === task.id)?.labelIds).toEqual([]);
+    const duplicate = await labels.create({ name: "work", color: "sky" }).catch((e) => e);
+    expect(duplicate).toMatchObject({ status: 409 });
   });
 
   it("keeps users' tasks private", async () => {
@@ -138,7 +175,7 @@ describe("frontend ↔ backend", () => {
       description: "",
       deadline: null,
       priority: "low",
-      labels: [],
+      labelIds: [],
     });
 
     expect(await bob.tasks.list()).toEqual([]);

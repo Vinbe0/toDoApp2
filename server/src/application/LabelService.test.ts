@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { ConflictError, NotFoundError } from "../domain/errors.js";
 import { InMemoryLabelRepository } from "../infrastructure/memory/InMemoryLabelRepository.js";
+import { InMemoryTaskRepository } from "../infrastructure/memory/InMemoryTaskRepository.js";
 import { LabelService } from "./LabelService.js";
 
 describe("LabelService", () => {
   let service: LabelService;
+  let tasks: InMemoryTaskRepository;
 
   beforeEach(() => {
-    service = new LabelService(new InMemoryLabelRepository());
+    tasks = new InMemoryTaskRepository();
+    service = new LabelService(new InMemoryLabelRepository(), tasks);
   });
 
   it("creates labels and lists only the user's own", async () => {
@@ -68,13 +71,18 @@ describe("LabelService", () => {
     ]);
   });
 
-  it("checks that task labels belong to the user", async () => {
-    const mine = await service.createLabel("u1", { name: "Mine" });
-    const theirs = await service.createLabel("u2", { name: "Theirs" });
+  it("removes a deleted label from tasks", async () => {
+    const keep = await service.createLabel("u1", { name: "Keep" });
+    const drop = await service.createLabel("u1", { name: "Drop" });
+    const task = await tasks.createTask({
+      id: "t1",
+      userId: "u1",
+      title: "Tagged",
+      position: 0,
+      labelIds: [keep.id, drop.id],
+    });
 
-    await expect(service.assertOwnsLabels("u1", [mine.id])).resolves.toBeUndefined();
-    await expect(service.assertOwnsLabels("u1", [mine.id, theirs.id])).rejects.toBeInstanceOf(
-      NotFoundError,
-    );
+    await service.deleteLabel("u1", drop.id);
+    expect((await tasks.getTaskById(task.id))?.labelIds).toEqual([keep.id]);
   });
 });

@@ -24,13 +24,13 @@ describe("ApiTaskRepository", () => {
   });
 
   it("creates a task with the API field names", async () => {
-    const { http, repo } = fakeHttp({ ...apiTask, labels: ["work"] });
+    const { http, repo } = fakeHttp({ ...apiTask, labelIds: ["work"] });
     const created = await repo.create({
       text: "Ship it",
       description: "",
       deadline: "2026-11-01",
       priority: "high",
-      labels: ["work"],
+      labelIds: ["work"],
     });
 
     expect(http.post).toHaveBeenCalledWith("/api/tasks", {
@@ -38,9 +38,9 @@ describe("ApiTaskRepository", () => {
       description: "",
       dueDate: "2026-11-01",
       priority: "high",
-      labels: ["work"],
+      labelIds: ["work"],
     });
-    expect(created.labels).toEqual(["work"]);
+    expect(created.labelIds).toEqual(["work"]);
   });
 
   it("sends only changed fields on update", async () => {

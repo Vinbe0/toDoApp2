@@ -1,5 +1,16 @@
 export type Priority = "high" | "medium" | "low";
-export type Label = "work" | "shopping" | "university";
+
+/** Must match the backend palette (server/src/domain/label.ts). */
+export type LabelColor =
+  "red" | "orange" | "amber" | "green" | "teal" | "sky" | "blue" | "violet" | "pink" | "slate";
+
+/** A user-defined tag. */
+export interface Label {
+  id: string;
+  name: string;
+  color: LabelColor;
+}
+
 export interface Task {
   id: string;
   text: string;
@@ -7,5 +18,6 @@ export interface Task {
   completed: boolean;
   deadline: string | null;
   priority: Priority;
-  labels: Label[];
+  /** Ids of the labels this task has. */
+  labelIds: string[];
 }

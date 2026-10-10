@@ -5,6 +5,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -32,10 +33,6 @@ export const tasks = pgTable(
     priority: text("priority", { enum: ["low", "medium", "high"] })
       .notNull()
       .default("low"),
-    labels: text("labels", { enum: ["work", "shopping", "university"] })
-      .array()
-      .notNull()
-      .default(sql`'{}'::text[]`),
     completed: boolean("completed").notNull().default(false),
     position: integer("position").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -62,6 +59,23 @@ export const labels = pgTable(
   },
   // One label per name per user, ignoring case.
   (table) => [uniqueIndex("labels_user_name_idx").on(table.userId, sql`lower(${table.name})`)],
+);
+
+/** Which labels each task has (many-to-many). */
+export const taskLabels = pgTable(
+  "task_labels",
+  {
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    labelId: uuid("label_id")
+      .notNull()
+      .references(() => labels.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.taskId, table.labelId] }),
+    index("task_labels_label_idx").on(table.labelId),
+  ],
 );
 
 export type TaskRow = typeof tasks.$inferSelect;

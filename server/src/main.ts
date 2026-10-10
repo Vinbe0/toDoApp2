@@ -14,8 +14,10 @@ const config = loadConfig();
 const database = await connectDatabase(config.database);
 
 // Composition root: the only place that picks concrete implementations.
-const labelService = new LabelService(new DrizzleLabelRepository(database.db));
-const taskService = new TaskService(new DrizzleTaskRepository(database.db));
+const labelRepository = new DrizzleLabelRepository(database.db);
+const taskRepository = new DrizzleTaskRepository(database.db);
+const labelService = new LabelService(labelRepository, taskRepository);
+const taskService = new TaskService(taskRepository, labelRepository);
 const authService = new AuthService(
   new DrizzleUserRepository(database.db),
   new BcryptPasswordHasher(),

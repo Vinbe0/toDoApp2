@@ -10,9 +10,8 @@ import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import TaskListSkeleton from "@/features/tasks/components/TaskListSkeleton.vue";
 import TaskSidebar from "@/features/tasks/components/TaskSidebar.vue";
 import ViewMenu from "@/features/tasks/components/ViewMenu.vue";
-import { labelName } from "@/features/tasks/components/taskDisplay";
 import { groupByDue, isQueryActive } from "@/features/tasks/model/query";
-import { LABELS } from "@/features/tasks/model/task";
+import { useLabelsStore } from "@/features/tasks/stores/labelsStore";
 import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 
@@ -20,7 +19,13 @@ const { isRegistered, user } = storeToRefs(useAuthStore());
 const store = useTasksStore();
 const { tasks, query, status, visibleTasks, counts, labelCounts, canReorder } = storeToRefs(store);
 
-onMounted(() => void store.load());
+const labelsStore = useLabelsStore();
+const { labels } = storeToRefs(labelsStore);
+
+onMounted(() => {
+  void store.load();
+  void labelsStore.load();
+});
 
 // vue-draggable-plus needs a writable list; writes become a reorder.
 const draggableTasks = computed({
@@ -42,9 +47,10 @@ const statusTitles = { all: "All tasks", active: "Active", completed: "Completed
 
 /** The heading names what's on screen: a search, a single label or a status view. */
 const viewTitle = computed(() => {
-  const { search, labels, status: viewStatus } = query.value;
+  const { search, labelIds, status: viewStatus } = query.value;
   if (search.trim()) return `Search: “${search.trim()}”`;
-  if (labels.length === 1 && viewStatus === "all") return `#${labelName(labels[0]!)}`;
+  const onlyLabel = labelIds.length === 1 ? labelsStore.byId.get(labelIds[0]!) : undefined;
+  if (onlyLabel && viewStatus === "all") return `#${onlyLabel.name}`;
   return statusTitles[viewStatus];
 });
 
@@ -62,7 +68,7 @@ watch(
 );
 // On small screens, picking a view or label closes the drawer (typing a search doesn't).
 watch(
-  () => `${query.value.status}|${query.value.labels.join()}`,
+  () => `${query.value.status}|${query.value.labelIds.join()}`,
   () => (sidebarOpen.value = false),
 );
 
@@ -89,7 +95,7 @@ const addTask = () => {
     >
       <TaskSidebar
         v-model:query="query"
-        :labels="LABELS"
+        :labels="labels"
         :counts="counts"
         :label-counts="labelCounts"
         :account-name="account.name"
@@ -176,6 +182,7 @@ const addTask = () => {
                 v-for="task in group.tasks"
                 :key="task.id"
                 :task="task"
+                :labels="labelsStore.resolve(task.labelIds)"
                 :draggable="false"
                 @toggle="store.toggle(task.id)"
                 @remove="store.remove(task.id)"
@@ -198,6 +205,7 @@ const addTask = () => {
             v-for="task in draggableTasks"
             :key="task.id"
             :task="task"
+            :labels="labelsStore.resolve(task.labelIds)"
             :draggable="canReorder"
             @toggle="store.toggle(task.id)"
             @remove="store.remove(task.id)"
@@ -205,7 +213,7 @@ const addTask = () => {
           />
         </VueDraggable>
 
-        <TaskComposer ref="composer" :labels="LABELS" :save="store.add" />
+        <TaskComposer ref="composer" :labels="labels" :save="store.add" />
       </div>
     </section>
   </div>

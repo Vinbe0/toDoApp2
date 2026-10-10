@@ -17,7 +17,7 @@ const input = (text: string) => ({
   description: "",
   deadline: null,
   priority: "medium" as const,
-  labels: [],
+  labelIds: [],
 });
 
 describe("LocalTaskRepository", () => {

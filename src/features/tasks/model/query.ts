@@ -8,7 +8,8 @@ export type TaskQuery = {
   status: StatusFilter;
   sort: SortOrder;
   search: string;
-  labels: Label[];
+  /** Selected label ids. */
+  labelIds: string[];
   /** true: a task needs every selected label; false: any of them. */
   matchAllLabels: boolean;
 };
@@ -17,7 +18,7 @@ export const createDefaultQuery = (): TaskQuery => ({
   status: "all",
   sort: "manual",
   search: "",
-  labels: [],
+  labelIds: [],
   matchAllLabels: false,
 });
 
@@ -48,9 +49,11 @@ export function matchesQuery(task: Task, query: TaskQuery): boolean {
   const search = query.search.trim().toLowerCase();
   if (search && !task.text.toLowerCase().includes(search)) return false;
 
-  if (query.labels.length) {
-    const hasLabel = (label: Label) => task.labels.includes(label);
-    const ok = query.matchAllLabels ? query.labels.every(hasLabel) : query.labels.some(hasLabel);
+  if (query.labelIds.length) {
+    const hasLabel = (labelId: string) => task.labelIds.includes(labelId);
+    const ok = query.matchAllLabels
+      ? query.labelIds.every(hasLabel)
+      : query.labelIds.some(hasLabel);
     if (!ok) return false;
   }
 
@@ -73,7 +76,7 @@ export function queryTasks(tasks: readonly Task[], query: TaskQuery): Task[] {
 }
 
 export function isQueryActive(query: TaskQuery) {
-  return query.status !== "all" || query.search.trim() !== "" || query.labels.length > 0;
+  return query.status !== "all" || query.search.trim() !== "" || query.labelIds.length > 0;
 }
 
 export function countTasks(tasks: readonly Task[]) {
@@ -81,12 +84,12 @@ export function countTasks(tasks: readonly Task[]) {
   return { all: tasks.length, active: tasks.length - completed, completed };
 }
 
-/** Open (not completed) tasks per label. */
+/** Open (not completed) tasks per label id. */
 export function countOpenByLabel(tasks: readonly Task[], labels: readonly Label[]) {
-  const counts = Object.fromEntries(labels.map((label) => [label, 0])) as Record<Label, number>;
+  const counts: Record<string, number> = Object.fromEntries(labels.map((label) => [label.id, 0]));
   for (const task of tasks) {
     if (task.completed) continue;
-    for (const label of task.labels) if (label in counts) counts[label] += 1;
+    for (const id of task.labelIds) if (id in counts) counts[id]! += 1;
   }
   return counts;
 }

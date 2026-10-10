@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { labelHashColor, labelName } from "@/features/tasks/components/taskDisplay";
+import { labelTextColor } from "@/features/tasks/components/taskDisplay";
 import type { Label } from "@/features/tasks/model/types";
 
 defineProps<{ label: Label; selected: boolean }>();
@@ -18,7 +18,7 @@ defineEmits<{ toggle: [] }>();
     :aria-pressed="selected"
     @click="$emit('toggle')"
   >
-    <span :class="['font-semibold', labelHashColor[label]]" aria-hidden="true">#</span>
-    {{ labelName(label) }}
+    <span :class="['font-semibold', labelTextColor[label.color]]" aria-hidden="true">#</span>
+    {{ label.name }}
   </button>
 </template>

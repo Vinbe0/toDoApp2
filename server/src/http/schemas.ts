@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LABEL_COLORS, MAX_LABEL_NAME_LENGTH } from "../domain/label.js";
-import { ALLOWED_LABELS, PRIORITIES } from "../domain/task.js";
+import { PRIORITIES } from "../domain/task.js";
 
 const email = z.string().trim().toLowerCase().email("Enter a valid email address").max(254);
 
@@ -32,10 +32,7 @@ export const createTaskSchema = z
     description: z.string().max(2000).optional(),
     dueDate: dueDate.optional(),
     priority: z.enum(PRIORITIES as [string, ...string[]]).optional(),
-    labels: z
-      .array(z.enum(ALLOWED_LABELS as [string, ...string[]]))
-      .max(10)
-      .optional(),
+    labelIds: z.array(z.string().uuid("Invalid label id")).max(20).optional(),
     // Allowed on create so already-done tasks (e.g. imported from guest mode) stay done.
     completed: z.boolean().optional(),
   })
@@ -51,7 +48,7 @@ export const reorderTasksSchema = z
   .strict();
 
 export const taskQuerySchema = z.object({
-  label: z.enum(ALLOWED_LABELS as [string, ...string[]]).optional(),
+  labelId: z.string().uuid("Invalid label id").optional(),
 });
 
 const labelName = z

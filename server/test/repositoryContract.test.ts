@@ -52,13 +52,18 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
       expect(await repos.users.getUserByEmail("nobody@example.com")).toBeNull();
     });
 
+    const label = (name: string) =>
+      repos.labels.createLabel({ id: randomUUID(), userId, name, color: "sky" });
+
     it("stores a task with all its fields", async () => {
+      const work = await label("Work");
+      const uni = await label("University");
       const created = await repos.tasks.createTask({
         ...newTask("Write tests", 0),
         description: "All of them",
         dueDate: "2026-11-01",
         priority: "high",
-        labels: ["university", "work"],
+        labelIds: [work.id, uni.id],
       });
 
       const found = await repos.tasks.getTaskById(created.id);
@@ -68,9 +73,24 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
         description: "All of them",
         dueDate: "2026-11-01",
         priority: "high",
-        labels: ["university", "work"],
         completed: false,
       });
+      expect([...found!.labelIds].sort()).toEqual([work.id, uni.id].sort());
+    });
+
+    it("replaces a task's labels and removes deleted labels from tasks", async () => {
+      const a = await label("A");
+      const b = await label("B");
+      const task = await repos.tasks.createTask({ ...newTask("Tagged", 0), labelIds: [a.id] });
+
+      await repos.tasks.updateTask(task.id, { labelIds: [b.id] });
+      expect((await repos.tasks.getTaskById(task.id))?.labelIds).toEqual([b.id]);
+
+      await repos.tasks.updateTask(task.id, { title: "Renamed" });
+      expect((await repos.tasks.getTaskById(task.id))?.labelIds).toEqual([b.id]);
+
+      await repos.tasks.removeLabelFromTasks(b.id);
+      expect((await repos.tasks.getTaskById(task.id))?.labelIds).toEqual([]);
     });
 
     it("lists a user's tasks ordered by position", async () => {

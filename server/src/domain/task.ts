@@ -1,10 +1,8 @@
 import { ValidationError } from "./errors.js";
 
 export type Priority = "low" | "medium" | "high";
-export type Label = "work" | "shopping" | "university";
 
 export const PRIORITIES: readonly Priority[] = ["low", "medium", "high"];
-export const ALLOWED_LABELS: readonly Label[] = ["work", "shopping", "university"];
 
 export interface TaskProps {
   id: string;
@@ -14,7 +12,8 @@ export interface TaskProps {
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  labels?: Label[];
+  /** Ids of the owner's labels. */
+  labelIds?: string[];
   completed?: boolean;
 }
 
@@ -27,7 +26,7 @@ export class Task {
   description: string;
   dueDate: string | null;
   priority: Priority;
-  labels: Label[];
+  labelIds: string[];
   completed: boolean;
   /** 0-based place in the owner's list; lower comes first. */
   position: number;
@@ -40,7 +39,7 @@ export class Task {
     description = "",
     dueDate = null,
     priority = "low",
-    labels = [],
+    labelIds = [],
     completed = false,
   }: TaskProps) {
     this.id = id;
@@ -49,8 +48,8 @@ export class Task {
     this.description = description;
     this.dueDate = dueDate;
     this.priority = priority;
-    // Order-preserving de-duplication: ["work", "work"] → ["work"].
-    this.labels = [...new Set(labels)];
+    // Order-preserving de-duplication.
+    this.labelIds = [...new Set(labelIds)];
     this.completed = completed;
     this.position = position;
     this.validate();
@@ -69,17 +68,14 @@ export class Task {
     if (!PRIORITIES.includes(this.priority)) {
       throw new ValidationError('Invalid priority level. Expected "low", "medium", or "high".');
     }
-    if (!this.labels.every((label) => ALLOWED_LABELS.includes(label))) {
-      throw new ValidationError('Invalid label. Expected "work", "shopping", or "university".');
-    }
   }
 
   isOwnedBy(userId: string): boolean {
     return this.userId === userId;
   }
 
-  hasLabel(label: Label): boolean {
-    return this.labels.includes(label);
+  hasLabel(labelId: string): boolean {
+    return this.labelIds.includes(labelId);
   }
 
   toggleCompletion(): void {

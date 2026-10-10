@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { LABELS } from "@/features/tasks/model/task";
+import { DEFAULT_LABELS } from "@/features/tasks/model/label";
 import type { NewTask } from "@/features/tasks/repositories";
 import TaskComposer from "../TaskComposer.vue";
 
 async function mountOpenComposer(result = true) {
   const save = vi.fn<(task: NewTask) => Promise<boolean>>(async () => result);
-  const wrapper = mount(TaskComposer, { props: { labels: LABELS, save }, attachTo: document.body });
+  const wrapper = mount(TaskComposer, {
+    props: { labels: DEFAULT_LABELS, save },
+    attachTo: document.body,
+  });
   await wrapper.get("button").trigger("click"); // "+ Add task"
   const title = () => wrapper.get<HTMLInputElement>('input[aria-label="Task title"]');
   return { wrapper, save, title };
@@ -19,7 +22,7 @@ describe("TaskComposer", () => {
   it("starts as a single Add task row and opens with the title focused", async () => {
     const save = vi.fn();
     const wrapper = mount(TaskComposer, {
-      props: { labels: LABELS, save },
+      props: { labels: DEFAULT_LABELS, save },
       attachTo: document.body,
     });
     expect(wrapper.find("form").exists()).toBe(false);
@@ -55,7 +58,7 @@ describe("TaskComposer", () => {
       description: "Before Friday",
       deadline: "2026-11-01",
       priority: "high",
-      labels: ["work"],
+      labelIds: ["work"],
     });
     expect(wrapper.find("form").exists()).toBe(true);
     expect(title().element.value).toBe("");

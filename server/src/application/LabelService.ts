@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ConflictError, NotFoundError } from "../domain/errors.js";
 import { DEFAULT_LABELS, LABEL_COLORS, Label, type LabelColor } from "../domain/label.js";
-import type { LabelRepository } from "../domain/repositories.js";
+import type { LabelRepository, TaskRepository } from "../domain/repositories.js";
 
 export interface CreateLabelInput {
   name: string;
@@ -15,7 +15,10 @@ export interface UpdateLabelInput {
 
 /** Label use cases: each user manages their own set of labels. */
 export class LabelService {
-  constructor(private readonly labelRepository: LabelRepository) {}
+  constructor(
+    private readonly labelRepository: LabelRepository,
+    private readonly taskRepository: TaskRepository,
+  ) {}
 
   listLabels(userId: string): Promise<Label[]> {
     return this.labelRepository.listLabels(userId);
@@ -44,6 +47,7 @@ export class LabelService {
 
   async deleteLabel(userId: string, labelId: string): Promise<void> {
     await this.getOwnedLabel(userId, labelId);
+    await this.taskRepository.removeLabelFromTasks(labelId);
     await this.labelRepository.deleteLabel(labelId);
   }
 
@@ -57,17 +61,6 @@ export class LabelService {
       );
     }
     return created;
-  }
-
-  /**
-   * Throws NotFoundError unless every id is one of the user's labels.
-   * Used when tasks reference labels.
-   */
-  async assertOwnsLabels(userId: string, labelIds: readonly string[]): Promise<void> {
-    if (!labelIds.length) return;
-    const owned = new Set((await this.labelRepository.listLabels(userId)).map((l) => l.id));
-    const unknown = labelIds.find((id) => !owned.has(id));
-    if (unknown) throw new NotFoundError("Label", unknown);
   }
 
   /** Loads a label only if it belongs to the user; others look like they don't exist. */

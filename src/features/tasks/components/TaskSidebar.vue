@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { labelHashColor, labelName } from "@/features/tasks/components/taskDisplay";
+import { labelTextColor } from "@/features/tasks/components/taskDisplay";
 import type { StatusFilter, TaskQuery } from "@/features/tasks/model/query";
 import type { Label } from "@/features/tasks/model/types";
 
 defineProps<{
   labels: readonly Label[];
   counts: Record<StatusFilter, number>;
-  labelCounts: Record<Label, number>;
+  /** Open tasks per label id. */
+  labelCounts: Record<string, number>;
   /** e.g. "Guest" or the account email. */
   accountName: string;
   accountHint: string;
@@ -26,11 +27,11 @@ const search = computed({
   set: (value: string) => update({ search: value }),
 });
 
-const toggleLabel = (label: Label) => {
-  const labels = query.value.labels.includes(label)
-    ? query.value.labels.filter((item) => item !== label)
-    : [...query.value.labels, label];
-  update({ labels });
+const toggleLabel = (labelId: string) => {
+  const labelIds = query.value.labelIds.includes(labelId)
+    ? query.value.labelIds.filter((id) => id !== labelId)
+    : [...query.value.labelIds, labelId];
+  update({ labelIds });
 };
 
 const views: Array<{ value: StatusFilter; label: string; icon: string }> = [
@@ -102,20 +103,22 @@ const itemActive = "bg-brand-500/10 font-medium text-brand-700 dark:text-brand-3
       <p class="px-2 pb-1 text-xs font-semibold text-fg-subtle">Labels</p>
       <button
         v-for="label in labels"
-        :key="label"
+        :key="label.id"
         type="button"
-        :class="[item, query.labels.includes(label) ? itemActive : itemIdle]"
-        :aria-pressed="query.labels.includes(label)"
-        @click="toggleLabel(label)"
+        :class="[item, query.labelIds.includes(label.id) ? itemActive : itemIdle]"
+        :aria-pressed="query.labelIds.includes(label.id)"
+        @click="toggleLabel(label.id)"
       >
-        <span :class="['w-5 text-center font-semibold', labelHashColor[label]]" aria-hidden="true"
+        <span
+          :class="['w-5 text-center font-semibold', labelTextColor[label.color]]"
+          aria-hidden="true"
           >#</span
         >
-        <span class="flex-1">{{ labelName(label) }}</span>
-        <span class="text-xs text-fg-subtle">{{ labelCounts[label] }}</span>
+        <span class="min-w-0 flex-1 truncate">{{ label.name }}</span>
+        <span class="text-xs text-fg-subtle">{{ labelCounts[label.id] ?? 0 }}</span>
       </button>
       <label
-        v-if="query.labels.length > 1"
+        v-if="query.labelIds.length > 1"
         class="mt-1 flex items-center gap-2 px-2 text-xs text-fg-muted"
       >
         <input

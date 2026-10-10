@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
-import { LABELS } from "@/features/tasks/model/task";
+import { DEFAULT_LABELS } from "@/features/tasks/model/label";
 import { createDefaultQuery, type TaskQuery } from "@/features/tasks/model/query";
 import TaskSidebar from "../TaskSidebar.vue";
 
@@ -8,7 +8,7 @@ function mountSidebar(query: Partial<TaskQuery> = {}) {
   return mount(TaskSidebar, {
     props: {
       query: { ...createDefaultQuery(), ...query },
-      labels: LABELS,
+      labels: DEFAULT_LABELS,
       counts: { all: 3, active: 2, completed: 1 },
       labelCounts: { work: 2, shopping: 1, university: 0 },
       accountName: "Guest",
@@ -42,16 +42,16 @@ describe("TaskSidebar", () => {
   });
 
   it("toggles labels", async () => {
-    const wrapper = mountSidebar({ labels: ["work"] });
+    const wrapper = mountSidebar({ labelIds: ["work"] });
     expect(button(wrapper, "Work").attributes("aria-pressed")).toBe("true");
 
     await button(wrapper, "Shopping").trigger("click");
-    expect(lastQuery(wrapper)?.labels).toEqual(["work", "shopping"]);
+    expect(lastQuery(wrapper)?.labelIds).toEqual(["work", "shopping"]);
   });
 
   it("offers match-all only when several labels are selected", () => {
-    expect(mountSidebar({ labels: ["work"] }).text()).not.toContain("Must match all");
-    expect(mountSidebar({ labels: ["work", "shopping"] }).text()).toContain("Must match all");
+    expect(mountSidebar({ labelIds: ["work"] }).text()).not.toContain("Must match all");
+    expect(mountSidebar({ labelIds: ["work", "shopping"] }).text()).toContain("Must match all");
   });
 
   it("asks to add a task", async () => {

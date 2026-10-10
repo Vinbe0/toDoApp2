@@ -14,6 +14,8 @@ export interface TaskRepository {
   deleteTask(id: string): Promise<boolean>;
   /** Sets each task's position to its index in orderedIds (all owned by userId). */
   reorderTasks(userId: string, orderedIds: string[]): Promise<void>;
+  /** Removes a (deleted) label from every task that had it. */
+  removeLabelFromTasks(labelId: string): Promise<void>;
 }
 
 export interface UserRepository {

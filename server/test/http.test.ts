@@ -145,6 +145,24 @@ describe("HTTP API", () => {
       expect((await api.post("/api/labels").set(auth).send({ name: "" })).status).toBe(400);
     });
 
+    it("filters tasks by label and drops deleted labels from tasks", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+      const { body: gym } = await api.post("/api/labels").set(auth).send({ name: "Gym" });
+      await api
+        .post("/api/tasks")
+        .set(auth)
+        .send({ title: "Run", labelIds: [gym.id] });
+      await api.post("/api/tasks").set(auth).send({ title: "Read" });
+
+      const filtered = await api.get(`/api/tasks?labelId=${gym.id}`).set(auth);
+      expect(filtered.body.map((t: { title: string }) => t.title)).toEqual(["Run"]);
+
+      await api.delete(`/api/labels/${gym.id}`).set(auth);
+      const { body: tasks } = await api.get("/api/tasks").set(auth);
+      expect(tasks.find((t: { title: string }) => t.title === "Run").labelIds).toEqual([]);
+    });
+
     it("keeps labels private to their owner", async () => {
       const { api, signUp } = createTestApp();
       const alice = await signUp();
@@ -213,18 +231,27 @@ describe("HTTP API", () => {
       expect(res.body.user.email).toBe("me@example.com");
     });
 
-    it("validates the label filter", async () => {
+    it("validates label ids on tasks and in the filter", async () => {
       const { api, signUp } = createTestApp();
       const { auth } = await signUp();
-      expect((await api.get("/api/tasks?label=gym").set(auth)).status).toBe(400);
+      const unknownId = crypto.randomUUID();
+
+      expect((await api.get("/api/tasks?labelId=gym").set(auth)).status).toBe(400);
+      expect((await api.get(`/api/tasks?labelId=${unknownId}`).set(auth)).status).toBe(400);
       expect(
         (
           await api
             .post("/api/tasks")
             .set(auth)
-            .send({ title: "x", labels: ["gym"] })
+            .send({ title: "x", labelIds: ["gym"] })
         ).status,
       ).toBe(400);
+      const unknown = await api
+        .post("/api/tasks")
+        .set(auth)
+        .send({ title: "x", labelIds: [unknownId] });
+      expect(unknown.status).toBe(400);
+      expect(unknown.body.message).toBe(`Unknown label "${unknownId}"`);
     });
   });
 
@@ -239,15 +266,23 @@ describe("HTTP API", () => {
       const { api, signUp } = createTestApp();
       const { auth } = await signUp();
 
+      const { body: labels } = await api.get("/api/labels").set(auth);
+      const workId = labels[0].id as string;
+
       const created = await api
         .post("/api/tasks")
         .set(auth)
-        .send({ title: "Write tests", priority: "high", dueDate: "2026-11-01", labels: ["work"] });
+        .send({
+          title: "Write tests",
+          priority: "high",
+          dueDate: "2026-11-01",
+          labelIds: [workId],
+        });
       expect(created.status).toBe(201);
       expect(created.body).toMatchObject({
         title: "Write tests",
         priority: "high",
-        labels: ["work"],
+        labelIds: [workId],
       });
       const id = created.body.id as string;
 

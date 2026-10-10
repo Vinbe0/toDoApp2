@@ -1,4 +1,4 @@
-import type { Label, Priority, Task } from "@/features/tasks/model/types";
+import type { LabelColor, Priority, Task } from "@/features/tasks/model/types";
 
 export const priorityOptions: Array<{
   value: Priority;
@@ -13,18 +13,37 @@ export const priorityOptions: Array<{
 export const priorityLabel = (priority: Priority) =>
   priorityOptions.find((option) => option.value === priority)?.label ?? priority;
 
-export const labelName = (label: Label) => label.charAt(0).toUpperCase() + label.slice(1);
-
 const toIsoDate = (date: Date) => {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-/** Colour of the "#" before each label, so labels are easy to tell apart. */
-export const labelHashColor: Record<Label, string> = {
-  work: "text-sky-600 dark:text-sky-400",
-  shopping: "text-amber-600 dark:text-amber-400",
-  university: "text-violet-600 dark:text-violet-400",
+/** Colour of the "#" before a label name. Full class names so Tailwind keeps them. */
+export const labelTextColor: Record<LabelColor, string> = {
+  red: "text-red-600 dark:text-red-400",
+  orange: "text-orange-600 dark:text-orange-400",
+  amber: "text-amber-600 dark:text-amber-400",
+  green: "text-green-600 dark:text-green-400",
+  teal: "text-teal-600 dark:text-teal-400",
+  sky: "text-sky-600 dark:text-sky-400",
+  blue: "text-blue-600 dark:text-blue-400",
+  violet: "text-violet-600 dark:text-violet-400",
+  pink: "text-pink-600 dark:text-pink-400",
+  slate: "text-slate-500 dark:text-slate-400",
+};
+
+/** Solid swatch for the colour picker. */
+export const labelSwatch: Record<LabelColor, string> = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  amber: "bg-amber-500",
+  green: "bg-green-500",
+  teal: "bg-teal-500",
+  sky: "bg-sky-500",
+  blue: "bg-blue-500",
+  violet: "bg-violet-500",
+  pink: "bg-pink-500",
+  slate: "bg-slate-500",
 };
 
 /** Checkbox ring (and fill when done) coloured by priority. */
