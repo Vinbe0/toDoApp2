@@ -34,6 +34,13 @@ describe("loadConfig", () => {
     );
   });
 
+  it("uses embedded PGlite unless DATABASE_URL is set", () => {
+    expect(loadConfig({}).database).toEqual({ pgliteDataDir: ".data/pglite" });
+    expect(loadConfig({ DATABASE_URL: "postgres://u:p@localhost:5432/todos" }).database).toEqual({
+      url: "postgres://u:p@localhost:5432/todos",
+    });
+  });
+
   it("rejects an invalid port", () => {
     expect(() => loadConfig({ PORT: "abc" })).toThrow(/PORT/);
   });

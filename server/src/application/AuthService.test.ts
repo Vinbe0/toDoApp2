@@ -48,12 +48,16 @@ describe("AuthService", () => {
     const { authService } = createTestServices();
     await authService.register(credentials);
 
-    const wrongPassword = authService.login({ ...credentials, password: "wrong-password" });
-    const unknownEmail = authService.login({ ...credentials, email: "other@example.com" });
+    const wrongPassword = await authService
+      .login({ ...credentials, password: "wrong-password" })
+      .catch((error: unknown) => error);
+    const unknownEmail = await authService
+      .login({ ...credentials, email: "other@example.com" })
+      .catch((error: unknown) => error);
 
-    await expect(wrongPassword).rejects.toThrow("Invalid email or password");
-    await expect(unknownEmail).rejects.toThrow("Invalid email or password");
-    await expect(unknownEmail).rejects.toBeInstanceOf(UnauthorizedError);
+    expect(wrongPassword).toBeInstanceOf(UnauthorizedError);
+    expect(unknownEmail).toBeInstanceOf(UnauthorizedError);
+    expect((unknownEmail as Error).message).toBe((wrongPassword as Error).message);
   });
 
   it("rejects tampered tokens", async () => {

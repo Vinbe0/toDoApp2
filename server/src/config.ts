@@ -10,6 +10,9 @@ const envSchema = z
     JWT_EXPIRES_IN: z.string().default("7d"),
     /** Comma-separated list of origins allowed to call the API from a browser. */
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
+    /** postgres://… — when unset, an embedded PGlite database is used instead. */
+    DATABASE_URL: z.string().url().optional(),
+    PGLITE_DATA_DIR: z.string().default(".data/pglite"),
     SIMULATE_LATENCY: z
       .enum(["true", "false"])
       .default("false")
@@ -44,6 +47,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     port: parsed.PORT,
     jwtSecret: parsed.JWT_SECRET,
     jwtExpiresIn: parsed.JWT_EXPIRES_IN,
+    database: parsed.DATABASE_URL
+      ? { url: parsed.DATABASE_URL }
+      : { pgliteDataDir: parsed.PGLITE_DATA_DIR },
     corsOrigins: parsed.CORS_ORIGIN.split(",")
       .map((origin) => origin.trim())
       .filter(Boolean),
