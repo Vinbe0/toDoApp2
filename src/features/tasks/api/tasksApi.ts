@@ -1,4 +1,4 @@
-import { http } from "@/shared/api/client";
+import { http } from "@/shared/api";
 import {
   type ApiTask,
   toApiCreateTask,

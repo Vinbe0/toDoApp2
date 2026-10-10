@@ -1,4 +1,4 @@
-import { http } from "@/shared/api/client";
+import { http } from "@/shared/api";
 
 export type AuthUser = { id: string; email: string };
 export type AuthResponse = { token: string; user: AuthUser };

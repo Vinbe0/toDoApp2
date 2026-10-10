@@ -1,5 +1,6 @@
 import { computed, ref } from "vue";
 import { authApi, type AuthUser } from "@/features/auth/api/authApi";
+import { http } from "@/shared/api";
 
 type AppMode = "guest" | "registered";
 const MODE_KEY = "app_mode";
@@ -9,6 +10,8 @@ const user = ref<AuthUser | null>(JSON.parse(localStorage.getItem("auth_user") |
 const mode = ref<AppMode>(
   token.value ? "registered" : (localStorage.getItem(MODE_KEY) as AppMode) || "guest",
 );
+
+http.setTokenProvider(() => token.value);
 
 function setMode(next: AppMode) {
   mode.value = next;

@@ -3,7 +3,7 @@ import { useToast } from "vue-toastification";
 import type { FilterMode, Label, Priority, Task } from "@/features/tasks/model/types";
 import { useAuth } from "@/features/auth/composables/useAuth";
 import { tasksApi } from "@/features/tasks/api/tasksApi";
-import { ApiError } from "@/shared/api/client";
+import { HttpError, getErrorMessage } from "@/shared/api";
 
 const GUEST_STORAGE_KEY = "guest-tasks";
 
@@ -47,12 +47,12 @@ export function useTasks() {
   const searchTitle = ref<string>("");
 
   function handleError(error: unknown, fallback: string) {
-    if (error instanceof ApiError && error.status === 401) {
+    if (error instanceof HttpError && error.isUnauthorized) {
       logout();
       toast.error("Your session has expired. Please log in again.");
       return;
     }
-    toast.error(error instanceof Error ? error.message : fallback);
+    toast.error(getErrorMessage(error, fallback));
   }
 
   function saveGuestTasks() {
