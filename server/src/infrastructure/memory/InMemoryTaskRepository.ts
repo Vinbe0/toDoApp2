@@ -19,7 +19,7 @@ export class InMemoryTaskRepository implements TaskRepository {
     return this.tasks.get(id) ?? null;
   }
 
-  async createTask(taskData: TaskProps & { userId: string }): Promise<Task> {
+  async createTask(taskData: TaskProps): Promise<Task> {
     const task = new Task(taskData);
     this.tasks.set(task.id, task);
 
@@ -30,7 +30,10 @@ export class InMemoryTaskRepository implements TaskRepository {
     return task;
   }
 
-  async updateTask(id: string, updatedData: Partial<TaskProps>): Promise<Task | null> {
+  async updateTask(
+    id: string,
+    updatedData: Partial<Omit<TaskProps, "id" | "userId">>,
+  ): Promise<Task | null> {
     const task = this.tasks.get(id);
     if (!task) return null;
     Object.assign(task, updatedData);

@@ -66,6 +66,7 @@ describe("HTTP API", () => {
 
       const list = await api.get("/api/tasks").set(auth);
       expect(list.body).toHaveLength(1);
+      expect(list.body[0]).not.toHaveProperty("userId");
 
       const updated = await api.put(`/api/tasks/${id}`).set(auth).send({ completed: true });
       expect(updated.status).toBe(200);
@@ -91,6 +92,25 @@ describe("HTTP API", () => {
       await api.post("/api/tasks").set(alice.auth).send({ title: "Alice's task" });
 
       expect((await api.get("/api/tasks").set(bob.auth)).body).toEqual([]);
+    });
+
+    it("does not let one user change or delete another user's task", async () => {
+      const { api, signUp } = createTestApp();
+      const alice = await signUp();
+      const bob = await signUp();
+      const { body: task } = await api
+        .post("/api/tasks")
+        .set(alice.auth)
+        .send({ title: "Alice's task" });
+
+      const update = await api.put(`/api/tasks/${task.id}`).set(bob.auth).send({ title: "Hacked" });
+      const remove = await api.delete(`/api/tasks/${task.id}`).set(bob.auth);
+
+      // 404, not 403: don't reveal that the task exists.
+      expect(update.status).toBe(404);
+      expect(remove.status).toBe(404);
+      const { body: aliceTasks } = await api.get("/api/tasks").set(alice.auth);
+      expect(aliceTasks).toEqual([expect.objectContaining({ title: "Alice's task" })]);
     });
   });
 });

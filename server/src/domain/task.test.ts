@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Task } from "./task.js";
 
-const valid = { id: "1", title: "Write tests", position: "a1" };
+const valid = { id: "1", userId: "u1", title: "Write tests", position: "a1" };
 
 describe("Task", () => {
   it("applies defaults", () => {
@@ -21,6 +21,12 @@ describe("Task", () => {
     [{ label: "gym" }, "Invalid label"],
   ])("rejects %j", (overrides, message) => {
     expect(() => new Task({ ...valid, ...(overrides as object) })).toThrow(message);
+  });
+
+  it("knows its owner", () => {
+    const task = new Task(valid);
+    expect(task.isOwnedBy("u1")).toBe(true);
+    expect(task.isOwnedBy("u2")).toBe(false);
   });
 
   it("toggles completion", () => {

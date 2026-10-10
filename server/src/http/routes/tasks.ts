@@ -1,5 +1,6 @@
 import { Router, type RequestHandler } from "express";
 import type { TaskService } from "../../application/TaskService.js";
+import { toTaskResponse } from "../presenters.js";
 
 export function createTasksRouter(taskService: TaskService, authenticate: RequestHandler) {
   const router = Router();
@@ -8,7 +9,8 @@ export function createTasksRouter(taskService: TaskService, authenticate: Reques
   router.get("/", async (req, res, next) => {
     try {
       const label = typeof req.query.label === "string" ? req.query.label : undefined;
-      res.json(await taskService.getAllTasks(req.user!.userId, label));
+      const tasks = await taskService.getAllTasks(req.user!.userId, label);
+      res.json(tasks.map(toTaskResponse));
     } catch (error) {
       next(error);
     }
@@ -16,7 +18,8 @@ export function createTasksRouter(taskService: TaskService, authenticate: Reques
 
   router.post("/", async (req, res, next) => {
     try {
-      res.status(201).json(await taskService.createTask(req.user!.userId, req.body));
+      const task = await taskService.createTask(req.user!.userId, req.body);
+      res.status(201).json(toTaskResponse(task));
     } catch (error) {
       next(error);
     }
@@ -25,7 +28,8 @@ export function createTasksRouter(taskService: TaskService, authenticate: Reques
   // Patch semantics: only the fields sent are changed.
   router.put("/:id", async (req, res, next) => {
     try {
-      res.json(await taskService.updateTask(req.user!.userId, String(req.params.id), req.body));
+      const task = await taskService.updateTask(req.user!.userId, String(req.params.id), req.body);
+      res.json(toTaskResponse(task));
     } catch (error) {
       next(error);
     }

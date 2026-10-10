@@ -6,6 +6,7 @@ export const ALLOWED_LABELS: readonly Label[] = ["work", "shopping", "university
 
 export interface TaskProps {
   id: string;
+  userId: string;
   title: string;
   position: string;
   description?: string;
@@ -18,6 +19,8 @@ export interface TaskProps {
 /** A to-do item. Construction fails if any field breaks a business rule. */
 export class Task {
   id: string;
+  /** Owner. Only this user may read or change the task. */
+  userId: string;
   title: string;
   description: string;
   dueDate: string | null;
@@ -29,6 +32,7 @@ export class Task {
 
   constructor({
     id,
+    userId,
     title,
     position,
     description = "",
@@ -38,6 +42,7 @@ export class Task {
     completed = false,
   }: TaskProps) {
     this.id = id;
+    this.userId = userId;
     this.title = title;
     this.description = description;
     this.dueDate = dueDate;
@@ -61,6 +66,10 @@ export class Task {
     if (!ALLOWED_LABELS.includes(this.label)) {
       throw new Error('Invalid label. Expected "work", "shopping", or "university".');
     }
+  }
+
+  isOwnedBy(userId: string): boolean {
+    return this.userId === userId;
   }
 
   toggleCompletion(): void {

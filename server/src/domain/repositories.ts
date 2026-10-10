@@ -5,8 +5,11 @@ import type { User, UserProps } from "./user.js";
 export interface TaskRepository {
   getAllTasks(userId: string): Promise<Task[]>;
   getTaskById(id: string): Promise<Task | null>;
-  createTask(taskData: TaskProps & { userId: string }): Promise<Task>;
-  updateTask(id: string, updatedData: Partial<TaskProps>): Promise<Task | null>;
+  createTask(taskData: TaskProps): Promise<Task>;
+  updateTask(
+    id: string,
+    updatedData: Partial<Omit<TaskProps, "id" | "userId">>,
+  ): Promise<Task | null>;
   deleteTask(id: string): Promise<boolean>;
 }
 

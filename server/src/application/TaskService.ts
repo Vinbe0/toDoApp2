@@ -57,9 +57,8 @@ export class TaskService {
     });
   }
 
-  async updateTask(_userId: string, taskId: string, input: UpdateTaskInput): Promise<Task> {
-    const task = await this.taskRepository.getTaskById(taskId);
-    if (!task) throw new NotFoundError("Task", taskId);
+  async updateTask(userId: string, taskId: string, input: UpdateTaskInput): Promise<Task> {
+    await this.getOwnedTask(userId, taskId);
     if (input.title !== undefined && !input.title.trim()) {
       throw new ValidationError("Task title cannot be empty");
     }
@@ -67,16 +66,24 @@ export class TaskService {
       throw new ValidationError('Invalid label. Expected "work", "shopping", or "university".');
     }
 
-    // TODO: check that the task belongs to the user (see next commit).
     const updated = await this.taskRepository.updateTask(taskId, input);
-    return updated!;
+    if (!updated) throw new NotFoundError("Task", taskId);
+    return updated;
   }
 
-  async deleteTask(_userId: string, taskId: string): Promise<void> {
-    const task = await this.taskRepository.getTaskById(taskId);
-    if (!task) throw new NotFoundError("Task", taskId);
-
+  async deleteTask(userId: string, taskId: string): Promise<void> {
+    await this.getOwnedTask(userId, taskId);
     await this.taskRepository.deleteTask(taskId);
+  }
+
+  /**
+   * Loads a task only if it belongs to the user. Other users' tasks are
+   * reported as not found, so their existence isn't revealed.
+   */
+  private async getOwnedTask(userId: string, taskId: string): Promise<Task> {
+    const task = await this.taskRepository.getTaskById(taskId);
+    if (!task || !task.isOwnedBy(userId)) throw new NotFoundError("Task", taskId);
+    return task;
   }
 
   /** "a0" → "a1", "a9" → "b0": appends to the end without renumbering. */

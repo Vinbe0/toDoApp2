@@ -49,6 +49,14 @@ describe("TaskService", () => {
     await expect(service.deleteTask("u1", "nope")).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("treats another user's task as not found", async () => {
+    const task = await service.createTask("u1", { title: "Private" });
+    await expect(service.updateTask("u2", task.id, { title: "x" })).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+    await expect(service.deleteTask("u2", task.id)).rejects.toBeInstanceOf(NotFoundError);
+  });
+
   it("deletes a task", async () => {
     const task = await service.createTask("u1", { title: "Temp" });
     await service.deleteTask("u1", task.id);
