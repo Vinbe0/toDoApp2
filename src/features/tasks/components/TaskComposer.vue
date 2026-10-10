@@ -7,7 +7,7 @@ import LabelChip from "@/features/tasks/components/LabelChip.vue";
 import { labelName, priorityOptions } from "@/features/tasks/components/taskDisplay";
 import type { Label, Priority } from "@/features/tasks/model/types";
 
-const props = defineProps<{ labels: Label[] }>();
+const props = defineProps<{ labels: readonly Label[] }>();
 const emit = defineEmits<{ submit: []; toggleLabel: [label: Label] }>();
 
 const text = defineModel<string>("text", { required: true });

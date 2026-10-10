@@ -1,9 +1,16 @@
 import { computed, h, onMounted, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
-import type { FilterMode, Label, Priority, Task } from "@/features/tasks/model/types";
+import type { Label, Task } from "@/features/tasks/model/types";
 import { useAuth } from "@/features/auth/composables/useAuth";
 import { tasksApi } from "@/features/tasks/api/tasksApi";
 import { normalizeTaskList } from "@/features/tasks/model/task";
+import {
+  applyReorder,
+  countTasks,
+  createDefaultQuery,
+  queryTasks,
+  type TaskQuery,
+} from "@/features/tasks/model/query";
 import { jsonItem } from "@/shared/lib/storage";
 import { HttpError, getErrorMessage } from "@/shared/api";
 
@@ -12,14 +19,6 @@ const guestTasksStorage = jsonItem("guest-tasks", normalizeTaskList);
 const { isRegistered, logout } = useAuth();
 
 const UNDO_TIMEOUT_MS = 5000;
-
-export const availableLabels: Label[] = ["work", "shopping", "university"];
-
-const priorityWeight: Record<Priority, number> = {
-  high: 1,
-  medium: 2,
-  low: 3,
-};
 
 type DraftTask = Pick<Task, "text" | "description" | "deadline" | "priority" | "labels">;
 
@@ -40,13 +39,9 @@ export function useTasks() {
   const toast = useToast();
 
   const tasks = ref<Task[]>([]);
-  const filter = ref<FilterMode>("all");
+  const query = ref<TaskQuery>(createDefaultQuery());
   const draftTask = ref<DraftTask>(createDraftTask());
   const editing = ref<EditingState>({ id: null, value: "" });
-  const selectedLabels = ref<Label[]>([]);
-  const labelFilterOpen = ref<boolean>(false);
-  const strictLabelFilter = ref<boolean>(false);
-  const searchTitle = ref<string>("");
 
   function handleError(error: unknown, fallback: string) {
     if (error instanceof HttpError && error.isUnauthorized) {
@@ -90,89 +85,13 @@ export function useTasks() {
     }
   }
 
-  const compareText = (a: Task, b: Task) => a.text.localeCompare(b.text);
-
-  const compareDate = (a: Task, b: Task) => {
-    const aTime = a.deadline ? Date.parse(a.deadline) : Number.POSITIVE_INFINITY;
-    const bTime = b.deadline ? Date.parse(b.deadline) : Number.POSITIVE_INFINITY;
-    return aTime - bTime;
-  };
-
-  const comparePriority = (a: Task, b: Task) =>
-    priorityWeight[a.priority] - priorityWeight[b.priority];
-
-  const filterLabelAll = () => {
-    if (!selectedLabels.value.length) return tasks.value;
-    return tasks.value.filter((task) =>
-      selectedLabels.value.every((label) => task.labels.includes(label)),
-    );
-  };
-
-  const filterLabelSome = () => {
-    if (!selectedLabels.value.length) return tasks.value;
-    return tasks.value.filter((task) =>
-      task.labels.some((label) => selectedLabels.value.includes(label)),
-    );
-  };
-
-  const filteredTasks = computed(() => {
-    const result = [...tasks.value];
-
-    if (filter.value === "active") {
-      return result.filter((task) => !task.completed);
-    }
-
-    if (filter.value === "completed") {
-      return result.filter((task) => task.completed);
-    }
-
-    if (filter.value === "byDate") {
-      return result.sort((a, b) => {
-        const byDate = compareDate(a, b);
-        if (byDate !== 0) return byDate;
-        const byPriority = comparePriority(a, b);
-        if (byPriority !== 0) return byPriority;
-        return compareText(a, b);
-      });
-    }
-
-    if (filter.value === "byPriority") {
-      return result.sort((a, b) => {
-        const byPriority = comparePriority(a, b);
-        if (byPriority !== 0) return byPriority;
-        const byDate = compareDate(a, b);
-        if (byDate !== 0) return byDate;
-        return compareText(a, b);
-      });
-    }
-
-    if (filter.value === "byLabel") {
-      return strictLabelFilter.value ? filterLabelAll() : filterLabelSome();
-    }
-
-    if (filter.value === "byTitle") {
-      const query = searchTitle.value.trim().toLowerCase();
-      if (!query) return result;
-      return result.filter((task) => task.text.toLowerCase().includes(query));
-    }
-
-    return result;
-  });
+  const filteredTasks = computed(() => queryTasks(tasks.value, query.value));
+  const counts = computed(() => countTasks(tasks.value));
 
   const draggableTasks = computed({
-    get() {
-      return filteredTasks.value;
-    },
-    set(newOrder: Task[]) {
-      const filteredIds = filteredTasks.value.map((task) => task.id);
-      let index = 0;
-
-      tasks.value = tasks.value.map((task) => {
-        if (filteredIds.includes(task.id)) {
-          return newOrder[index++] ?? task;
-        }
-        return task;
-      });
+    get: () => filteredTasks.value,
+    set(reordered: Task[]) {
+      tasks.value = applyReorder(tasks.value, reordered);
       if (!isRegistered.value) saveGuestTasks();
     },
   });
@@ -328,11 +247,6 @@ export function useTasks() {
     );
   };
 
-  const openLabelFilter = () => {
-    filter.value = "byLabel";
-    labelFilterOpen.value = !labelFilterOpen.value;
-  };
-
   const toggleArrayLabel = (target: Label[], label: Label) => {
     const index = target.indexOf(label);
     if (index === -1) {
@@ -346,36 +260,27 @@ export function useTasks() {
     toggleArrayLabel(draftTask.value.labels, label);
   };
 
-  const toggleSelectedLabel = (label: Label) => {
-    toggleArrayLabel(selectedLabels.value, label);
-  };
-
-  const handleSearch = () => {
-    filter.value = "byTitle";
+  const resetQuery = () => {
+    query.value = { ...createDefaultQuery(), sort: query.value.sort };
   };
 
   return {
     tasks,
-    filter,
+    query,
+    counts,
     draftTask,
     editing,
-    selectedLabels,
-    labelFilterOpen,
-    searchTitle,
-    strictLabelFilter,
     filteredTasks,
     draggableTasks,
     addNewTask,
     deleteTask,
-    handleSearch,
     completeTask,
     startEdit,
     saveEdit,
     cancelEdit,
     clearCompleted,
-    openLabelFilter,
+    resetQuery,
     toggleDraftLabel,
-    toggleSelectedLabel,
     importGuestTasks,
   };
 }

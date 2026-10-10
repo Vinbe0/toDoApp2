@@ -1,47 +1,37 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import BaseBadge from "@/shared/ui/BaseBadge.vue";
+import BaseButton from "@/shared/ui/BaseButton.vue";
 import EmptyState from "@/shared/ui/EmptyState.vue";
 import TaskComposer from "@/features/tasks/components/TaskComposer.vue";
 import TaskFilters from "@/features/tasks/components/TaskFilters.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
-import { availableLabels, useTasks } from "@/features/tasks/composables/useTasks";
+import { useTasks } from "@/features/tasks/composables/useTasks";
+import { LABELS } from "@/features/tasks/model/task";
 import { useAuth } from "@/features/auth/composables/useAuth";
 
 const { isRegistered } = useAuth();
 const {
   tasks,
+  query,
+  counts,
   draftTask,
-  filter,
   editing,
-  selectedLabels,
-  searchTitle,
-  strictLabelFilter,
   draggableTasks,
   addNewTask,
   deleteTask,
-  handleSearch,
   completeTask,
   startEdit,
   saveEdit,
   cancelEdit,
   clearCompleted,
+  resetQuery,
   toggleDraftLabel,
-  toggleSelectedLabel,
 } = useTasks();
 
-const counts = computed(() => {
-  const completed = tasks.value.filter((task) => task.completed).length;
-  return { all: tasks.value.length, active: tasks.value.length - completed, completed };
-});
-
-// Manual ordering only makes sense when the full, unsorted list is shown.
-const canReorder = computed(() => filter.value === "all");
-
-watch(filter, (value) => {
-  if (value !== "byTitle") searchTitle.value = "";
-});
+// Manual ordering is only meaningful when the list isn't sorted.
+const canReorder = computed(() => query.value.sort === "manual");
 </script>
 
 <template>
@@ -64,14 +54,10 @@ watch(filter, (value) => {
 
     <div class="grid items-start gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
       <TaskFilters
-        v-model:filter="filter"
-        v-model:search="searchTitle"
-        v-model:strict-labels="strictLabelFilter"
-        :labels="availableLabels"
-        :selected-labels="selectedLabels"
+        v-model:query="query"
+        :labels="LABELS"
         :counts="counts"
-        @search="handleSearch"
-        @toggle-label="toggleSelectedLabel"
+        @reset="resetQuery"
         @clear-completed="clearCompleted"
       />
 
@@ -82,7 +68,7 @@ watch(filter, (value) => {
           v-model:deadline="draftTask.deadline"
           v-model:priority="draftTask.priority"
           v-model:selected-labels="draftTask.labels"
-          :labels="availableLabels"
+          :labels="LABELS"
           @submit="addNewTask"
           @toggle-label="toggleDraftLabel"
         />
@@ -96,7 +82,17 @@ watch(filter, (value) => {
               ? 'Try another filter or search term.'
               : 'Add your first task above to get started.'
           "
-        />
+        >
+          <BaseButton
+            v-if="tasks.length"
+            variant="secondary"
+            size="sm"
+            class="mt-2"
+            @click="resetQuery"
+          >
+            Reset filters
+          </BaseButton>
+        </EmptyState>
 
         <VueDraggable
           v-else

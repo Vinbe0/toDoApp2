@@ -49,65 +49,24 @@ describe("useTasks (guest mode)", () => {
     expect(texts(tasks.value)).toEqual(["Saved"]);
   });
 
-  it("filters active and completed tasks", async () => {
-    const { filter, filteredTasks } = await setup([
-      makeTask({ text: "Open" }),
+  it("exposes the filtered list and counts for the current query", async () => {
+    const { query, filteredTasks, counts } = await setup([
+      makeTask({ text: "Open report", priority: "low" }),
+      makeTask({ text: "Urgent report", priority: "high" }),
       makeTask({ text: "Done", completed: true }),
     ]);
 
-    filter.value = "active";
-    expect(texts(filteredTasks.value)).toEqual(["Open"]);
-
-    filter.value = "completed";
-    expect(texts(filteredTasks.value)).toEqual(["Done"]);
+    query.value = { ...query.value, status: "active", search: "report", sort: "priority" };
+    expect(texts(filteredTasks.value)).toEqual(["Urgent report", "Open report"]);
+    expect(counts.value).toEqual({ all: 3, active: 2, completed: 1 });
   });
 
-  it("sorts by priority, then deadline", async () => {
-    const { filter, filteredTasks } = await setup([
-      makeTask({ text: "Low", priority: "low" }),
-      makeTask({ text: "High later", priority: "high", deadline: "2026-12-01" }),
-      makeTask({ text: "High sooner", priority: "high", deadline: "2026-11-01" }),
-    ]);
+  it("resets filters but keeps the sort order", async () => {
+    const { query, resetQuery } = await setup([]);
+    query.value = { ...query.value, search: "x", status: "completed", sort: "deadline" };
 
-    filter.value = "byPriority";
-    expect(texts(filteredTasks.value)).toEqual(["High sooner", "High later", "Low"]);
-  });
-
-  it("puts tasks without a deadline last when sorting by date", async () => {
-    const { filter, filteredTasks } = await setup([
-      makeTask({ text: "No date" }),
-      makeTask({ text: "Later", deadline: "2026-12-01" }),
-      makeTask({ text: "Sooner", deadline: "2026-11-01" }),
-    ]);
-
-    filter.value = "byDate";
-    expect(texts(filteredTasks.value)).toEqual(["Sooner", "Later", "No date"]);
-  });
-
-  it("searches by title case-insensitively", async () => {
-    const { filter, searchTitle, filteredTasks } = await setup([
-      makeTask({ text: "Buy Milk" }),
-      makeTask({ text: "Write report" }),
-    ]);
-
-    filter.value = "byTitle";
-    searchTitle.value = "milk";
-    expect(texts(filteredTasks.value)).toEqual(["Buy Milk"]);
-  });
-
-  it("filters by any or all selected labels", async () => {
-    const { filter, selectedLabels, strictLabelFilter, filteredTasks } = await setup([
-      makeTask({ text: "Work only", labels: ["work"] }),
-      makeTask({ text: "Work + uni", labels: ["work", "university"] }),
-      makeTask({ text: "Shopping", labels: ["shopping"] }),
-    ]);
-
-    filter.value = "byLabel";
-    selectedLabels.value = ["work", "university"];
-    expect(texts(filteredTasks.value)).toEqual(["Work only", "Work + uni"]);
-
-    strictLabelFilter.value = true;
-    expect(texts(filteredTasks.value)).toEqual(["Work + uni"]);
+    resetQuery();
+    expect(query.value).toMatchObject({ search: "", status: "all", sort: "deadline" });
   });
 
   it("adds, completes and deletes tasks and persists them", async () => {
