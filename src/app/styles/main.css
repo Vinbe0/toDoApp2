@@ -8,23 +8,33 @@
  * instead of raw palette colors, so themes only need to redefine them here.
  */
 :root {
-  --app-bg: #f4f6f5;
+  /* Warm neutrals: paper-like background, brown-black text. */
+  --app-bg: #fdfcfa;
   --app-surface: #ffffff;
-  --app-surface-muted: #eef1ef;
-  --app-border: #dfe4e1;
-  --app-fg: #111a15;
-  --app-fg-muted: #4b5852;
-  --app-fg-subtle: #7c8983;
+  --app-surface-muted: #f5f2ee;
+  --app-border: #ebe6df;
+  --app-fg: #25221e;
+  --app-fg-muted: #5f5952;
+  --app-fg-subtle: #8f8880;
+
+  /* Soft backdrops for product shots and highlighted sections. */
+  --app-tint-mint: #eef7f1;
+  --app-tint-cream: #fdf6e9;
+  --app-tint-peach: #fdf0ea;
 }
 
 .dark {
-  --app-bg: #0c1210;
-  --app-surface: #141c19;
-  --app-surface-muted: #1d2723;
-  --app-border: #2a3631;
-  --app-fg: #eef3f0;
-  --app-fg-muted: #a9b6b0;
-  --app-fg-subtle: #74827c;
+  --app-bg: #1b1916;
+  --app-surface: #23201d;
+  --app-surface-muted: #2c2925;
+  --app-border: #393430;
+  --app-fg: #f3efe9;
+  --app-fg-muted: #b9b1a7;
+  --app-fg-subtle: #877f75;
+
+  --app-tint-mint: #1f2a24;
+  --app-tint-cream: #2b261c;
+  --app-tint-peach: #2d221d;
 }
 
 @theme inline {
@@ -37,6 +47,9 @@
   --color-fg: var(--app-fg);
   --color-fg-muted: var(--app-fg-muted);
   --color-fg-subtle: var(--app-fg-subtle);
+  --color-tint-mint: var(--app-tint-mint);
+  --color-tint-cream: var(--app-tint-cream);
+  --color-tint-peach: var(--app-tint-peach);
 
   --color-brand-50: var(--color-emerald-50);
   --color-brand-100: var(--color-emerald-100);
