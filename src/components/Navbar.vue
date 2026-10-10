@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import AppLogo from "@/components/ui/AppLogo.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
+import ThemeToggle from "@/components/ui/ThemeToggle.vue";
 import { useAuth } from "@/composables/useAuth";
 
 const { isRegistered } = useAuth();
@@ -43,6 +44,7 @@ const activeClass = "!bg-brand-500/10 !text-brand-700 dark:!text-brand-300";
       </div>
 
       <div class="hidden items-center gap-2 md:flex">
+        <ThemeToggle />
         <BaseButton v-if="isRegistered" :to="{ name: 'account' }" variant="secondary" size="sm">
           <i class="pi pi-user" aria-hidden="true" /> Account
         </BaseButton>
@@ -52,16 +54,19 @@ const activeClass = "!bg-brand-500/10 !text-brand-700 dark:!text-brand-300";
         </template>
       </div>
 
-      <button
-        type="button"
-        class="rounded-lg p-2 text-fg-muted hover:bg-surface-muted md:hidden"
-        :aria-expanded="menuOpen"
-        aria-controls="mobile-menu"
-        aria-label="Toggle menu"
-        @click="menuOpen = !menuOpen"
-      >
-        <i :class="['pi', menuOpen ? 'pi-times' : 'pi-bars']" aria-hidden="true" />
-      </button>
+      <div class="flex items-center gap-1 md:hidden">
+        <ThemeToggle />
+        <button
+          type="button"
+          class="rounded-lg p-2 text-fg-muted hover:bg-surface-muted"
+          :aria-expanded="menuOpen"
+          aria-controls="mobile-menu"
+          aria-label="Toggle menu"
+          @click="menuOpen = !menuOpen"
+        >
+          <i :class="['pi', menuOpen ? 'pi-times' : 'pi-bars']" aria-hidden="true" />
+        </button>
+      </div>
     </nav>
 
     <div v-if="menuOpen" id="mobile-menu" class="grid gap-1 border-t border-border px-4 py-3 md:hidden">
