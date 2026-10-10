@@ -4,6 +4,8 @@
 
 A full-stack task planner: a **Vue 3 + TypeScript + Pinia** frontend and an **Express + PostgreSQL** backend ([`server/`](server/README.md)). Use it as a guest with tasks saved in the browser, or create an account to sync tasks through the API.
 
+> **Portfolio project.** This repository demonstrates frontend and backend engineering. It isn't a hosted or commercial service; run it locally with the steps in [Getting started](#getting-started).
+
 ## Features
 
 - **Tasks with details**: title, description, deadline, priority (high / medium / low) and labels
