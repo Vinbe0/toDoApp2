@@ -99,4 +99,61 @@ describe("TaskComposer", () => {
     expect(work().attributes("aria-pressed")).toBe("false");
     wrapper.unmount();
   });
+
+  describe("creating a label", () => {
+    async function mountWithCreate(created: { id: string; name: string } | null) {
+      const save = vi.fn<(task: NewTask) => Promise<boolean>>(async () => true);
+      const createLabel = vi.fn(async () =>
+        created ? { ...created, color: "red" as const } : null,
+      );
+      const wrapper = mount(TaskComposer, {
+        props: { labels: DEFAULT_LABELS, save, createLabel },
+        attachTo: document.body,
+      });
+      await wrapper.get("button").trigger("click");
+      await buttonByText(wrapper, "Label").trigger("click");
+      return {
+        wrapper,
+        save,
+        createLabel,
+        input: () => wrapper.get('input[aria-label="New label name"]'),
+      };
+    }
+
+    it("creates the label and selects it on the task", async () => {
+      const { wrapper, save, createLabel, input } = await mountWithCreate({
+        id: "gym",
+        name: "Gym",
+      });
+
+      await input().setValue("Gym");
+      await input().trigger("keydown", { key: "Enter" });
+      await flushPromises();
+      expect(createLabel).toHaveBeenCalledWith("Gym");
+      expect(wrapper.find('input[aria-label="New label name"]').exists()).toBe(false);
+
+      await wrapper.get('input[aria-label="Task title"]').setValue("Run");
+      await wrapper.get("form").trigger("submit");
+      await flushPromises();
+      expect(save).toHaveBeenCalledWith(expect.objectContaining({ labelIds: ["gym"] }));
+      wrapper.unmount();
+    });
+
+    it("keeps the field open when the name is rejected", async () => {
+      const { wrapper, input } = await mountWithCreate(null);
+      await input().setValue("work");
+      await input().trigger("keydown", { key: "Enter" });
+      await flushPromises();
+      expect(wrapper.find('input[aria-label="New label name"]').exists()).toBe(true);
+      wrapper.unmount();
+    });
+
+    it("Escape closes only the label field, not the task editor", async () => {
+      const { wrapper, input } = await mountWithCreate(null);
+      await input().trigger("keydown", { key: "Escape" });
+      expect(wrapper.find('input[aria-label="New label name"]').exists()).toBe(false);
+      expect(wrapper.find("form").exists()).toBe(true);
+      wrapper.unmount();
+    });
+  });
 });

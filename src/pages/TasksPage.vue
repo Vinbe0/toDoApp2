@@ -221,7 +221,12 @@ const addTask = () => {
           />
         </VueDraggable>
 
-        <TaskComposer ref="composer" :labels="labels" :save="store.add" />
+        <TaskComposer
+          ref="composer"
+          :labels="labels"
+          :save="store.add"
+          :create-label="labelsStore.create"
+        />
       </div>
     </section>
   </div>
