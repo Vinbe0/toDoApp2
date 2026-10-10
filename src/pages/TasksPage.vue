@@ -122,8 +122,6 @@ const addTask = () => {
           />
         </header>
 
-        <TaskComposer ref="composer" :labels="LABELS" :save="store.add" class="mb-2" />
-
         <TaskListSkeleton v-if="status === 'loading' && !tasks.length" />
 
         <EmptyState
@@ -144,7 +142,7 @@ const addTask = () => {
           :description="
             tasks.length
               ? 'Try another filter or search term.'
-              : 'Add your first task above to get started.'
+              : 'Add your first task below to get started.'
           "
           class="mt-4"
         >
@@ -178,6 +176,8 @@ const addTask = () => {
             @rename="store.rename(task.id, $event)"
           />
         </VueDraggable>
+
+        <TaskComposer ref="composer" :labels="LABELS" :save="store.add" />
       </div>
     </section>
   </div>
