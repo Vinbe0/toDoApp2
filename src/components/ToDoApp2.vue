@@ -6,8 +6,9 @@
       <aside class="h-full w-full border-r border-gray-200 bg-gray-50 p-3">
         <h2 class="mb-6 text-xl font-bold text-black">Search by title</h2>
         <input
-        type="text"
-        class="rounded-2xl bg-gray-200 px-2 py-1.5 font-semibold"
+        type="search"
+        aria-label="Search tasks by title"
+        class="mb-6 w-full rounded-2xl bg-gray-200 px-2 py-1.5 font-semibold"
         placeholder="Enter title..."
         @input="handleSearch"
         v-model="searchTitle"
@@ -92,12 +93,13 @@
           <div class="grid gap-2 sm:grid-cols-2">
             <input
               type="date"
+              aria-label="Deadline"
               class="h-12 rounded-2xl bg-gray-200 px-2 font-bold text-black"
-              required
               v-model="draftDeadline"
             />
 
             <select
+              aria-label="Priority"
               class="h-12 rounded-2xl bg-gray-200 px-2 font-bold text-black appearance-none"
               v-model="draftTask.priority"
             >
@@ -115,6 +117,7 @@
           />
 
           <select
+            aria-label="Labels"
             class="rounded-2xl bg-gray-200 px-2 py-2 font-bold text-black"
             multiple
             size="3"
@@ -132,13 +135,25 @@
 
           <button
             type="submit"
-            class="h-10 w-[20%] rounded-2xl border border-green-700 bg-green-700 font-bold text-amber-50 duration-200 hover:bg-green-800"
+            class="h-10 w-full sm:w-48 rounded-2xl border border-green-700 bg-green-700 font-bold text-amber-50 duration-200 hover:bg-green-800"
           >
             Add Task
           </button>
         </form>
 
-        <h2 class="text-center text-3xl font-bold text-black">Your tasks</h2>
+        <div class="text-center">
+          <h2 class="text-3xl font-bold text-black">Your tasks</h2>
+          <p class="text-sm font-semibold text-gray-500">
+            {{ activeCount }} active · {{ tasks.length - activeCount }} completed
+          </p>
+        </div>
+
+        <p
+          v-if="!draggableTasks.length"
+          class="rounded-xl bg-white/60 p-6 text-center font-semibold text-gray-500"
+        >
+          {{ tasks.length ? "No tasks match this filter." : "No tasks yet — add your first one above!" }}
+        </p>
 
         <VueDraggable
           v-model="draggableTasks"
@@ -153,6 +168,8 @@
           >
             <div class="flex items-start gap-3">
               <button
+                type="button"
+                :aria-label="`Delete task ${task.text}`"
                 class="h-8 w-8 shrink-0 rounded-full border border-green-600 bg-green-500 font-bold text-amber-50 duration-300 hover:border-red-600 hover:bg-red-500"
                 @click="deleteTask(task.id)"
               >
@@ -165,13 +182,15 @@
                   class="mt-1 h-5 w-5 shrink-0 rounded-full disabled:cursor-not-allowed"
                   :checked="task.completed"
                   :class="{ 'accent-gray-500': task.completed }"
-                  @click="completeTask(task.id)"
+                  :aria-label="`Mark ${task.text} as ${task.completed ? 'not done' : 'done'}`"
+                  @change="completeTask(task.id)"
                 />
 
                 <div class="min-w-0 flex-1">
                   <div
                     v-if="editing.id !== task.id"
                     class="flex min-w-0 items-start gap-2"
+                    title="Double-click to rename"
                     @dblclick="startEdit(task)"
                   >
                     <div class="min-w-0 flex-1">
@@ -188,7 +207,13 @@
                     </div>
 
                     <div class="flex shrink-0 flex-col items-end gap-1">
-                      <span class="whitespace-nowrap text-sm text-gray-400">{{ task.deadline }}</span>
+                      <span
+                        v-if="task.deadline"
+                        class="whitespace-nowrap text-sm"
+                        :class="isOverdue(task) ? 'text-red-600' : 'text-gray-400'"
+                      >
+                        {{ isOverdue(task) ? "Overdue · " : "" }}{{ formatDate(task.deadline) }}
+                      </span>
                       <ul class="flex max-w-[10rem] flex-wrap justify-end gap-1">
                         <li class="whitespace-nowrap text-sm" :class="priorityStyles[task.priority]">
                           {{ task.priority }}
@@ -206,6 +231,7 @@
 
                   <input
                     v-else
+                    aria-label="Task title"
                     class="h-8 w-full rounded-xl border bg-amber-50 px-1 font-bold text-black"
                     v-model="editing.value"
                     @blur="saveEdit"
@@ -230,7 +256,7 @@ import {
   priorityStyles,
   useTasks,
 } from "@/composables/useTasks";
-import type { FilterMode } from "@/types/todo";
+import type { FilterMode, Task } from "@/types/todo";
 
 const filterButtons: Array<{ label: string; value: FilterMode }> = [
   { label: "All", value: "all" },
@@ -241,6 +267,7 @@ const filterButtons: Array<{ label: string; value: FilterMode }> = [
 ];
 
 const {
+  tasks,
   draftTask,
   filter,
   editing,
@@ -261,6 +288,26 @@ const {
   toggleDraftLabel,
   toggleSelectedLabel,
 } = useTasks();
+
+const activeCount = computed(
+  () => tasks.value.filter((task) => !task.completed).length,
+);
+
+const todayIso = () => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+const isOverdue = (task: Task) =>
+  !task.completed && !!task.deadline && task.deadline.slice(0, 10) < todayIso();
+
+const formatDate = (value: string) =>
+  new Date(value.slice(0, 10) + "T00:00:00").toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
 const draftDeadline = computed({
   get() {
