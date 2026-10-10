@@ -1,8 +1,10 @@
 import { computed, ref, watch } from "vue";
 import { defineStore, storeToRefs } from "pinia";
 import type { Task } from "@/features/tasks/model/types";
+import { LABELS } from "@/features/tasks/model/task";
 import {
   applyReorder,
+  countOpenByLabel,
   countTasks,
   createDefaultQuery,
   queryTasks,
@@ -32,6 +34,7 @@ export const useTasksStore = defineStore("tasks", () => {
 
   const visibleTasks = computed(() => queryTasks(tasks.value, query.value));
   const counts = computed(() => countTasks(tasks.value));
+  const labelCounts = computed(() => countOpenByLabel(tasks.value, LABELS));
   const canReorder = computed(() => query.value.sort === "manual");
 
   function reportError(error: unknown, fallback: string) {
@@ -193,6 +196,7 @@ export const useTasksStore = defineStore("tasks", () => {
     status,
     visibleTasks,
     counts,
+    labelCounts,
     canReorder,
     load,
     add,

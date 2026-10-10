@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   applyReorder,
+  countOpenByLabel,
   countTasks,
   createDefaultQuery,
+  groupByDue,
   isQueryActive,
   queryTasks,
   type TaskQuery,
@@ -115,6 +117,19 @@ describe("helpers", () => {
     });
   });
 
+  it("counts open tasks per label", () => {
+    const list = [
+      task({ labels: ["work"] }),
+      task({ labels: ["work", "shopping"] }),
+      task({ labels: ["work"], completed: true }),
+    ];
+    expect(countOpenByLabel(list, ["work", "shopping", "university"])).toEqual({
+      work: 2,
+      shopping: 1,
+      university: 0,
+    });
+  });
+
   it("detects whether any filter is applied", () => {
     expect(isQueryActive(createDefaultQuery())).toBe(false);
     expect(isQueryActive(query({ sort: "priority" }))).toBe(false);
@@ -130,5 +145,44 @@ describe("helpers", () => {
     ];
     // B and D are visible; the user drags D above B.
     expect(titles(applyReorder([a, b, c, d], [d, b]))).toEqual(["A", "D", "C", "B"]);
+  });
+});
+
+describe("groupByDue", () => {
+  // Saturday 10 October 2026
+  const now = new Date(2026, 9, 10, 15, 0);
+
+  it("puts tasks into date sections in a fixed order and skips empty ones", () => {
+    const list = [
+      task({ text: "Later", deadline: "2026-11-01" }),
+      task({ text: "No date" }),
+      task({ text: "Late", deadline: "2026-10-08" }),
+      task({ text: "Done late", deadline: "2026-10-08", completed: true }),
+      task({ text: "Today", deadline: "2026-10-10" }),
+      task({ text: "Tomorrow", deadline: "2026-10-11" }),
+      task({ text: "Thursday", deadline: "2026-10-15" }),
+    ];
+
+    expect(groupByDue(list, now).map((g) => [g.title, titles(g.tasks)])).toEqual([
+      ["Overdue", ["Late"]],
+      ["Earlier", ["Done late"]],
+      ["Today", ["Today"]],
+      ["Tomorrow", ["Tomorrow"]],
+      ["Next 7 days", ["Thursday"]],
+      ["Later", ["Later"]],
+      ["No date", ["No date"]],
+    ]);
+  });
+
+  it("keeps the incoming order within a section", () => {
+    const list = [
+      task({ text: "B", deadline: "2026-10-10" }),
+      task({ text: "A", deadline: "2026-10-10" }),
+    ];
+    expect(titles(groupByDue(list, now)[0]!.tasks)).toEqual(["B", "A"]);
+  });
+
+  it("returns no sections for no tasks", () => {
+    expect(groupByDue([], now)).toEqual([]);
   });
 });

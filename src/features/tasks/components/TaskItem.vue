@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { nextTick, ref } from "vue";
-import BaseBadge from "@/shared/ui/BaseBadge.vue";
+import { computed, nextTick, ref } from "vue";
 import {
-  formatDate,
-  isDueToday,
-  isOverdue,
+  describeDue,
+  dueToneClass,
+  labelHashColor,
   labelName,
+  priorityCheckbox,
   priorityLabel,
-  priorityTone,
 } from "@/features/tasks/components/taskDisplay";
 import type { Task } from "@/features/tasks/model/types";
 
@@ -21,6 +20,8 @@ const emit = defineEmits<{
 const editing = ref(false);
 const editValue = ref("");
 const editInput = ref<HTMLInputElement | null>(null);
+
+const due = computed(() => describeDue(props.task));
 
 async function startEdit() {
   editValue.value = props.task.text;
@@ -42,13 +43,10 @@ function cancelEdit() {
 </script>
 
 <template>
-  <li
-    class="group flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-xs transition hover:shadow-md"
-    :class="task.completed && 'opacity-70'"
-  >
+  <li class="group relative flex items-start gap-3 border-b border-border py-3">
     <span
       v-if="draggable"
-      class="drag-handle mt-0.5 hidden cursor-grab sm:block text-fg-subtle opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
+      class="drag-handle absolute top-3.5 -left-6 hidden cursor-grab text-fg-subtle opacity-0 transition group-hover:opacity-100 active:cursor-grabbing sm:block"
       aria-hidden="true"
       title="Drag to reorder"
     >
@@ -60,15 +58,16 @@ function cancelEdit() {
       role="checkbox"
       :aria-checked="task.completed"
       :aria-label="`Mark ${task.text} as ${task.completed ? 'not done' : 'done'}`"
-      class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors"
-      :class="
-        task.completed
-          ? 'border-brand-600 bg-brand-600 text-white'
-          : 'border-fg-subtle hover:border-brand-500'
-      "
+      :data-done="task.completed"
+      class="group/check mt-0.5 grid size-[1.125rem] shrink-0 place-items-center rounded-full border-[1.5px] transition-colors data-[done=true]:text-white"
+      :class="priorityCheckbox[task.priority]"
       @click="emit('toggle')"
     >
-      <i v-if="task.completed" class="pi pi-check text-[10px]" aria-hidden="true" />
+      <i
+        class="pi pi-check text-[9px]"
+        :class="task.completed ? 'opacity-100' : 'opacity-0 group-hover/check:opacity-100'"
+        aria-hidden="true"
+      />
     </button>
 
     <div class="min-w-0 flex-1">
@@ -77,14 +76,14 @@ function cancelEdit() {
         ref="editInput"
         v-model="editValue"
         aria-label="Task title"
-        class="h-8 w-full rounded-lg border border-brand-500 bg-surface px-2 font-medium text-fg focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
+        class="-my-0.5 w-full rounded-md border border-brand-500 bg-surface px-1.5 py-0.5 text-sm text-fg focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
         @blur="saveEdit"
         @keyup.enter="saveEdit"
         @keyup.esc="cancelEdit"
       />
       <p
         v-else
-        class="font-medium break-words text-fg"
+        class="text-sm break-words text-fg"
         :class="task.completed && 'text-fg-subtle line-through'"
         title="Double-click to rename"
         @dblclick="startEdit"
@@ -92,42 +91,43 @@ function cancelEdit() {
         {{ task.text }}
       </p>
 
-      <p v-if="task.description" class="mt-0.5 text-sm break-words text-fg-muted">
+      <p v-if="task.description" class="mt-0.5 text-xs break-words text-fg-muted">
         {{ task.description }}
       </p>
 
-      <div class="mt-2 flex flex-wrap items-center gap-1.5">
-        <BaseBadge :tone="priorityTone(task.priority)">
-          <i class="pi pi-flag text-[10px]" aria-hidden="true" />
-          {{ priorityLabel(task.priority) }}
-        </BaseBadge>
-        <BaseBadge v-if="task.deadline" :tone="isOverdue(task) ? 'red' : 'neutral'">
+      <div
+        v-if="due || task.labels.length"
+        class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
+      >
+        <span v-if="due" class="inline-flex items-center gap-1" :class="dueToneClass[due.tone]">
           <i class="pi pi-calendar text-[10px]" aria-hidden="true" />
-          {{ isOverdue(task) ? "Overdue · " : isDueToday(task) ? "Today · " : ""
-          }}{{ formatDate(task.deadline) }}
-        </BaseBadge>
-        <BaseBadge v-for="label in task.labels" :key="label">#{{ labelName(label) }}</BaseBadge>
+          <span v-if="due.tone === 'overdue'" class="sr-only">Overdue:</span>{{ due.text }}
+        </span>
+        <span v-for="label in task.labels" :key="label" class="text-fg-muted"
+          ><span :class="labelHashColor[label]">#</span>{{ labelName(label) }}</span
+        >
       </div>
+      <span class="sr-only">{{ priorityLabel(task.priority) }} priority</span>
     </div>
 
     <div
-      class="flex shrink-0 gap-1 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+      class="flex shrink-0 gap-0.5 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
     >
       <button
         type="button"
-        class="grid size-8 place-items-center rounded-lg text-fg-subtle hover:bg-surface-muted hover:text-fg"
+        class="grid size-7 place-items-center rounded-md text-fg-subtle hover:bg-surface-muted hover:text-fg"
         :aria-label="`Rename task ${task.text}`"
         @click="startEdit"
       >
-        <i class="pi pi-pencil text-sm" aria-hidden="true" />
+        <i class="pi pi-pencil text-xs" aria-hidden="true" />
       </button>
       <button
         type="button"
-        class="grid size-8 place-items-center rounded-lg text-fg-subtle hover:bg-red-500/10 hover:text-red-600"
+        class="grid size-7 place-items-center rounded-md text-fg-subtle hover:bg-red-500/10 hover:text-red-600"
         :aria-label="`Delete task ${task.text}`"
         @click="emit('remove')"
       >
-        <i class="pi pi-trash text-sm" aria-hidden="true" />
+        <i class="pi pi-trash text-xs" aria-hidden="true" />
       </button>
     </div>
   </li>

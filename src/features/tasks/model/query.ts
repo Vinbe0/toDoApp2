@@ -81,6 +81,16 @@ export function countTasks(tasks: readonly Task[]) {
   return { all: tasks.length, active: tasks.length - completed, completed };
 }
 
+/** Open (not completed) tasks per label. */
+export function countOpenByLabel(tasks: readonly Task[], labels: readonly Label[]) {
+  const counts = Object.fromEntries(labels.map((label) => [label, 0])) as Record<Label, number>;
+  for (const task of tasks) {
+    if (task.completed) continue;
+    for (const label of task.labels) if (label in counts) counts[label] += 1;
+  }
+  return counts;
+}
+
 /**
  * Applies a reorder of a visible subset back onto the full list:
  * hidden tasks keep their slots, visible ones take the new order.
@@ -89,4 +99,51 @@ export function applyReorder(all: readonly Task[], reorderedVisible: readonly Ta
   const visibleIds = new Set(reorderedVisible.map((task) => task.id));
   const queue = [...reorderedVisible];
   return all.map((task) => (visibleIds.has(task.id) ? (queue.shift() ?? task) : task));
+}
+
+export type DueGroupKey = "overdue" | "earlier" | "today" | "tomorrow" | "week" | "later" | "none";
+
+export type DueGroup = { key: DueGroupKey; title: string; tasks: Task[] };
+
+const DUE_GROUPS: Array<{ key: DueGroupKey; title: string }> = [
+  { key: "overdue", title: "Overdue" },
+  { key: "earlier", title: "Earlier" },
+  { key: "today", title: "Today" },
+  { key: "tomorrow", title: "Tomorrow" },
+  { key: "week", title: "Next 7 days" },
+  { key: "later", title: "Later" },
+  { key: "none", title: "No date" },
+];
+
+const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+function dueGroupOf(task: Task, today: Date): DueGroupKey {
+  if (!task.deadline) return "none";
+  const [year, month, day] = task.deadline.slice(0, 10).split("-").map(Number);
+  const due = new Date(year!, month! - 1, day!);
+  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+
+  if (days < 0) return task.completed ? "earlier" : "overdue";
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days < 7) return "week";
+  return "later";
+}
+
+/**
+ * Splits tasks into date sections (Overdue, Today, Tomorrow, …), keeping
+ * their order within each section and leaving out empty sections.
+ */
+export function groupByDue(tasks: readonly Task[], now = new Date()): DueGroup[] {
+  const today = startOfDay(now);
+  const buckets = new Map<DueGroupKey, Task[]>();
+  for (const task of tasks) {
+    const key = dueGroupOf(task, today);
+    buckets.set(key, [...(buckets.get(key) ?? []), task]);
+  }
+  return DUE_GROUPS.filter(({ key }) => buckets.has(key)).map(({ key, title }) => ({
+    key,
+    title,
+    tasks: buckets.get(key)!,
+  }));
 }
