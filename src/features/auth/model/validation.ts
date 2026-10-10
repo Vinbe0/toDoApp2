@@ -2,7 +2,8 @@ export type AuthMode = "login" | "register";
 export type Credentials = { email: string; password: string };
 export type CredentialErrors = Partial<Record<keyof Credentials, string>>;
 
-export const MIN_PASSWORD_LENGTH = 6;
+/** Must match the backend rule in server/src/http/schemas.ts. */
+export const MIN_PASSWORD_LENGTH = 8;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

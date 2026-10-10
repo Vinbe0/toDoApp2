@@ -23,8 +23,8 @@ describe("ApiTaskRepository", () => {
     expect(http.get).toHaveBeenCalledWith("/api/tasks");
   });
 
-  it("creates a task with the API field names and keeps labels", async () => {
-    const { http, repo } = fakeHttp(apiTask);
+  it("creates a task with the API field names", async () => {
+    const { http, repo } = fakeHttp({ ...apiTask, labels: ["work"] });
     const created = await repo.create({
       text: "Ship it",
       description: "",
@@ -38,6 +38,7 @@ describe("ApiTaskRepository", () => {
       description: "",
       dueDate: "2026-11-01",
       priority: "high",
+      labels: ["work"],
     });
     expect(created.labels).toEqual(["work"]);
   });
@@ -46,6 +47,12 @@ describe("ApiTaskRepository", () => {
     const { http, repo } = fakeHttp(apiTask);
     await repo.update("1", { completed: true });
     expect(http.put).toHaveBeenCalledWith("/api/tasks/1", { completed: true });
+  });
+
+  it("saves the manual order", async () => {
+    const { http, repo } = fakeHttp([]);
+    await repo.reorder(["b", "a"]);
+    expect(http.put).toHaveBeenCalledWith("/api/tasks/order", { ids: ["b", "a"] });
   });
 
   it("deletes by id", async () => {

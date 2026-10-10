@@ -61,7 +61,7 @@ describe("CredentialsForm", () => {
     await submit();
 
     expect(wrapper.text()).toContain("Enter a valid email address");
-    expect(wrapper.text()).toContain("Use at least 6 characters");
+    expect(wrapper.text()).toContain("Use at least 8 characters");
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
@@ -69,10 +69,10 @@ describe("CredentialsForm", () => {
     vi.mocked(authApi.login).mockResolvedValue(session);
     const { router, fill, submit } = await mountForm("login", "/login?redirect=/account");
 
-    await fill(" me@example.com ", "secret");
+    await fill(" me@example.com ", "secret123");
     await submit();
 
-    expect(authApi.login).toHaveBeenCalledWith("me@example.com", "secret");
+    expect(authApi.login).toHaveBeenCalledWith("me@example.com", "secret123");
     expect(router.currentRoute.value.fullPath).toBe("/account");
   });
 
@@ -80,7 +80,7 @@ describe("CredentialsForm", () => {
     vi.mocked(authApi.register).mockResolvedValue(session);
     const { router, fill, submit } = await mountForm("register");
 
-    await fill("me@example.com", "secret");
+    await fill("me@example.com", "secret123");
     await submit();
     expect(router.currentRoute.value.name).toBe("tasks");
   });
@@ -98,7 +98,7 @@ describe("CredentialsForm", () => {
     vi.mocked(authApi.register).mockRejectedValue(new HttpError("Conflict", 409));
     const { wrapper, fill, submit } = await mountForm("register");
 
-    await fill("me@example.com", "secret");
+    await fill("me@example.com", "secret123");
     await submit();
     expect(wrapper.get('[role="alert"]').text()).toBe("An account with this email already exists");
   });

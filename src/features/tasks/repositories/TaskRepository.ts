@@ -12,6 +12,6 @@ export interface TaskRepository {
   create(input: NewTask): Promise<Task>;
   update(id: string, patch: TaskPatch): Promise<Task>;
   remove(id: string): Promise<void>;
-  /** Persists a manual ordering. Backends without ordering may ignore it. */
+  /** Persists a manual ordering of the given task ids. */
   reorder(orderedIds: string[]): Promise<void>;
 }

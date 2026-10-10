@@ -20,7 +20,17 @@ describe("task mappers", () => {
       description: "",
       dueDate: "2026-10-12",
       priority: "high",
+      labels: [],
     });
+  });
+
+  it("maps labels in both directions", () => {
+    expect(toUiTask({ id: "1", title: "x", labels: ["work", "shopping"] }).labels).toEqual([
+      "work",
+      "shopping",
+    ]);
+    expect(toApiCreateTask({ text: "x", labels: ["university"] }).labels).toEqual(["university"]);
+    expect(toApiUpdateTask({ labels: [] })).toEqual({ labels: [] });
   });
 
   it("only includes changed fields in the update payload", () => {

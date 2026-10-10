@@ -22,15 +22,15 @@ describe("validatePassword", () => {
 
   it("enforces the minimum length only when registering", () => {
     expect(validatePassword("abc", "login")).toBeUndefined();
-    expect(validatePassword("abc", "register")).toBe("Use at least 6 characters");
-    expect(validatePassword("abcdef", "register")).toBeUndefined();
+    expect(validatePassword("abc", "register")).toBe("Use at least 8 characters");
+    expect(validatePassword("abcdefgh", "register")).toBeUndefined();
   });
 });
 
 describe("validateCredentials", () => {
   it("returns no errors for valid input", () => {
     expect(
-      validateCredentials({ email: "me@example.com", password: "secret" }, "register"),
+      validateCredentials({ email: "me@example.com", password: "secret123" }, "register"),
     ).toEqual({});
   });
 
