@@ -18,7 +18,8 @@
     "lint:check": "eslint . --cache",
     "format": "prettier --write src/ *.ts index.html",
     "format:check": "prettier --check src/ *.ts index.html",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
