@@ -465,7 +465,7 @@ class TaskService {
   // Упрощённый инкремент позиции: "a0" → "a1", "a9" → "b0".
   // Позволяет добавлять задачи в конец без пересчёта всего списка.
   private static incrementPosition(pos: string): string {
-    const letter = pos[0];
+    const letter = pos[0] ?? "a";
     const num = parseInt(pos.slice(1), 10);
     if (num < 9) return `${letter}${num + 1}`;
     return `${String.fromCharCode(letter.charCodeAt(0) + 1)}0`;
@@ -593,6 +593,7 @@ class AuthService {
 // Мы расширяем interface Request через module augmentation чтобы
 // TypeScript знал: после authenticateMiddleware на req.user есть объект.
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- Express augmentation
   namespace Express {
     interface Request {
       user?: { userId: string; email: string };
@@ -679,7 +680,7 @@ function createTasksRouter(
       try {
         const task = await taskService.updateTask(
           req.user!.userId,
-          req.params.id,
+          String(String(req.params.id)),
           req.body,
         );
         res.json(task);
@@ -694,7 +695,7 @@ function createTasksRouter(
     "/:id",
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        await taskService.deleteTask(req.user!.userId, req.params.id);
+        await taskService.deleteTask(req.user!.userId, String(req.params.id));
         res.status(204).send(); // 204 No Content — успех, но тело ответа пустое (нечего возвращать)
       } catch (error) {
         next(error);

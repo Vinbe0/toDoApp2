@@ -1,11 +1,17 @@
 {
-  "name": "todo-backend",
+  "name": "todos-server",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "build": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.check.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write src test",
+    "format:check": "prettier --check src test"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -14,12 +20,24 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.20.5",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "supertest": "^7.3.1",
     "tsx": "^4.20.3",
-    "typescript": "^5.7.2"
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^3.2.7"
+  },
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20.19"
   }
 }
