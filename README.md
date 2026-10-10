@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/Vinbe0/toDoApp2/actions/workflows/ci.yml/badge.svg)
 
-A task-planning web app built with **Vue 3**, **TypeScript**, **Pinia** and **Tailwind CSS**. Use it as a guest with tasks saved in the browser, or create an account to store tasks on the server through a REST API.
+A full-stack task planner: a **Vue 3 + TypeScript + Pinia** frontend and an **Express + PostgreSQL** backend ([`server/`](server/README.md)). Use it as a guest with tasks saved in the browser, or create an account to sync tasks through the API.
 
 ## Features
 
@@ -19,20 +19,37 @@ A task-planning web app built with **Vue 3**, **TypeScript**, **Pinia** and **Ta
 
 ## Tech stack
 
-| Area      | Tools                                                    |
-| --------- | -------------------------------------------------------- |
-| Framework | Vue 3 (Composition API, `<script setup>`)                |
-| Language  | TypeScript (strict, checked with `vue-tsc`)              |
-| State     | Pinia                                                    |
-| Routing   | Vue Router: lazy-loaded pages, auth guards, page titles  |
-| Styling   | Tailwind CSS v4 with semantic design tokens, PrimeIcons  |
-| Testing   | Vitest, Vue Test Utils, V8 coverage                      |
-| Quality   | ESLint (incl. layer-boundary rules), Prettier            |
-| CI        | GitHub Actions: lint, format, type check, test and build |
+| Area      | Tools                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------- |
+| Framework | Vue 3 (Composition API, `<script setup>`)                                                 |
+| Language  | TypeScript (strict, checked with `vue-tsc`)                                               |
+| State     | Pinia                                                                                     |
+| Routing   | Vue Router: lazy-loaded pages, auth guards, page titles                                   |
+| Styling   | Tailwind CSS v4 with semantic design tokens, PrimeIcons                                   |
+| Testing   | Vitest, Vue Test Utils, V8 coverage                                                       |
+| Quality   | ESLint (incl. layer-boundary rules), Prettier                                             |
+| Backend   | Express, Drizzle ORM, PostgreSQL / PGlite, Zod, JWT, bcrypt ([details](server/README.md)) |
+| CI        | GitHub Actions: frontend, backend (with real PostgreSQL) and full-stack integration jobs  |
 
 ## Architecture
 
-The code is organized by feature, with dependencies pointing in one direction:
+```mermaid
+flowchart LR
+  subgraph Browser
+    Vue["Vue app<br/>pages · features · Pinia"]
+    LS[("localStorage<br/>guest tasks")]
+  end
+  subgraph Server["server/"]
+    API["Express API<br/>http → application → domain"]
+    DB[("PostgreSQL<br/>(PGlite in dev)")]
+  end
+  Vue -- guest --> LS
+  Vue -- "account: /api (JWT)" --> API --> DB
+```
+
+The backend has its own layers, API reference and security notes in [server/README.md](server/README.md). The rest of this section covers the frontend.
+
+The frontend code is organized by feature, with dependencies pointing in one direction:
 
 ```mermaid
 flowchart LR
@@ -85,31 +102,34 @@ Tests sit in `__tests__/` folders next to the code they test.
 Requires Node.js 20.19+ or 22.12+.
 
 ```sh
-npm install
-cp .env.example .env   # set VITE_API_URL to your backend URL
-npm run dev
+npm run setup      # installs the frontend and server dependencies
+npm run dev:all    # web on http://localhost:5173, API on http://localhost:3000
 ```
 
-Guest mode works without a backend. Account features need the TODOS API running at `VITE_API_URL` (default `http://localhost:3000`), with these endpoints:
+No database setup is needed: the API uses an embedded PostgreSQL (PGlite) by default. To try a ready-made account with sample tasks, run `npm run db:seed --prefix server` and log in as `demo@example.com` / `demo-password-123`.
 
-| Method | Endpoint             | Description           |
-| ------ | -------------------- | --------------------- |
-| POST   | `/api/auth/register` | Create account → JWT  |
-| POST   | `/api/auth/login`    | Log in → JWT          |
-| GET    | `/api/tasks`         | List the user's tasks |
-| POST   | `/api/tasks`         | Create a task         |
-| PUT    | `/api/tasks/:id`     | Update a task         |
-| DELETE | `/api/tasks/:id`     | Delete a task         |
+In development, the app calls `/api` on its own origin and Vite proxies it to the backend. For production builds, set `VITE_API_URL` to the API's URL (see `.env.example`). Guest mode works without the backend.
+
+## Testing
+
+| Level              | Where                                    | What it covers                                                                           |
+| ------------------ | ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Unit and component | `src/**/__tests__`                       | Task model, stores, repositories, HTTP client, components                                |
+| Backend            | `server/src/**/*.test.ts`, `server/test` | Domain rules, services, HTTP API, repositories on PGlite and real PostgreSQL, migrations |
+| Full-stack         | `integration/`                           | The frontend's own API code against the real backend and database                        |
 
 ## Scripts
 
-| Command                 | Description                          |
-| ----------------------- | ------------------------------------ |
-| `npm run dev`           | Start the dev server                 |
-| `npm run build`         | Type-check and build for production  |
-| `npm run preview`       | Preview the production build         |
-| `npm test`              | Run unit and component tests         |
-| `npm run test:coverage` | Run tests with a coverage report     |
-| `npm run typecheck`     | Type-check with `vue-tsc`            |
-| `npm run lint`          | Lint and auto-fix with ESLint        |
-| `npm run format`        | Format with Prettier                 |
+| Command                    | Description                                      |
+| -------------------------- | ------------------------------------------------ |
+| `npm run dev:all`          | Start the web app and the API                    |
+| `npm run dev`              | Start only the web app                           |
+| `npm run setup`            | Install frontend and server packages             |
+| `npm run build`            | Type-check and build for production              |
+| `npm run preview`          | Preview the production build                     |
+| `npm test`                 | Run unit and component tests                     |
+| `npm run test:coverage`    | Run tests with a coverage report                 |
+| `npm run test:integration` | Run full-stack tests (needs `server/` installed) |
+| `npm run typecheck`        | Type-check with `vue-tsc`                        |
+| `npm run lint`             | Lint and auto-fix with ESLint                    |
+| `npm run format`           | Format with Prettier                             |
