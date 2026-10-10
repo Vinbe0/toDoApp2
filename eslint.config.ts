@@ -27,5 +27,41 @@ export default defineConfigWithVueTs(
     },
   },
 
+  // Layer boundaries: shared <- features <- pages <- app.
+  {
+    name: "app/boundaries/shared",
+    files: ["src/shared/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/features/*", "@/pages/*", "@/app/*"],
+              message: "shared/ must not depend on features, pages or app.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    name: "app/boundaries/features",
+    files: ["src/features/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/pages/*", "@/app/*"],
+              message: "features/ must not depend on pages or app.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   skipFormatting,
 );

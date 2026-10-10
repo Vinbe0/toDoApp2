@@ -1,6 +1,5 @@
 import { reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { safeRedirect } from "@/app/router/guards";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import {
   type AuthMode,
@@ -11,6 +10,7 @@ import {
 import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 import { HttpError, getErrorMessage } from "@/shared/api";
 import { notify } from "@/shared/lib/notify";
+import { safeRedirect } from "@/shared/lib/safeRedirect";
 
 function describeAuthError(error: unknown, mode: AuthMode) {
   if (error instanceof HttpError) {

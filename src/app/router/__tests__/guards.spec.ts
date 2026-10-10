@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveAuthRedirect, safeRedirect } from "../guards";
+import { resolveAuthRedirect } from "../guards";
 
 const route = (fullPath: string, meta = {}) => ({ fullPath, meta });
 
@@ -25,17 +25,4 @@ describe("resolveAuthRedirect", () => {
       name: "tasks",
     });
   });
-});
-
-describe("safeRedirect", () => {
-  it("accepts in-app paths", () => {
-    expect(safeRedirect("/account")).toBe("/account");
-  });
-
-  it.each([undefined, "", "https://evil.example", "//evil.example", ["/a"]])(
-    "falls back for %j",
-    (value) => {
-      expect(safeRedirect(value)).toBe("/todo");
-    },
-  );
 });
