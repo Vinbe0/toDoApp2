@@ -37,6 +37,9 @@ describe("HTTP API", () => {
     const blocked = await attempt();
     expect(blocked.status).toBe(429);
     expect(blocked.body.error).toBe("TooManyRequests");
+
+    // Session checks are not throttled.
+    expect((await request(app).get("/api/auth/me")).status).toBe(401);
   });
 
   it("returns JSON 404s for unknown routes", async () => {
@@ -58,6 +61,23 @@ describe("HTTP API", () => {
       const loggedIn = await api.post("/api/auth/login").send(body);
       expect(loggedIn.status).toBe(200);
       expect(loggedIn.body.token).toEqual(expect.any(String));
+    });
+
+    it("returns the current user for a valid token", async () => {
+      const { api, signUp } = createTestApp();
+      const { email, auth } = await signUp();
+
+      const me = await api.get("/api/auth/me").set(auth);
+      expect(me.status).toBe(200);
+      expect(me.body.user.email).toBe(email);
+      expect((await api.get("/api/auth/me")).status).toBe(401);
+    });
+
+    it("rejects tokens for accounts that no longer exist", async () => {
+      const { api, tokenService } = createTestApp();
+      const token = tokenService.sign({ userId: crypto.randomUUID(), email: "gone@example.com" });
+      const res = await api.get("/api/auth/me").set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(401);
     });
 
     it("returns 409 for an existing email and 401 for bad credentials", async () => {

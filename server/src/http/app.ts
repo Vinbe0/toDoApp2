@@ -48,8 +48,9 @@ export function createApp({
     legacyHeaders: false,
     message: { error: "TooManyRequests", message: "Too many attempts. Try again later." },
   });
-  app.use("/api/auth", authLimiter, createAuthRouter(authService));
-  app.use("/api/tasks", createTasksRouter(taskService, createAuthenticate(authService)));
+  const authenticate = createAuthenticate(authService);
+  app.use("/api/auth", createAuthRouter(authService, authenticate, authLimiter));
+  app.use("/api/tasks", createTasksRouter(taskService, authenticate));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

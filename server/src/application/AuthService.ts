@@ -55,6 +55,13 @@ export class AuthService {
     return this.issueToken(user.id, user.email.address);
   }
 
+  /** The account behind a token; fails if it was deleted after the token was issued. */
+  async getCurrentUser(userId: string): Promise<AuthResult["user"]> {
+    const user = await this.userRepository.getUserById(userId);
+    if (!user) throw new UnauthorizedError("Account no longer exists");
+    return { id: user.id, email: user.email.address };
+  }
+
   verifyToken(token: string): TokenPayload {
     return this.tokenService.verify(token);
   }
