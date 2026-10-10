@@ -11,5 +11,11 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,vue}"],
+      exclude: ["src/**/__tests__/**", "src/main.ts", "src/**/*.d.ts"],
+      reporter: ["text-summary", "html"],
+    },
   },
 });
