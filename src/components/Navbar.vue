@@ -1,5 +1,5 @@
 <script setup>
-    import logo from '@/assets/bp.png';
+    import AppLogo from '@/components/ui/AppLogo.vue';
     import { RouterLink } from 'vue-router'
     import { useAuth } from '@/composables/useAuth';
 
@@ -15,10 +15,7 @@
       <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div class="flex min-h-20 flex-wrap items-center justify-between gap-2 py-2">
             <RouterLink class="flex flex-shrink-0 items-center mr-4" to="/">
-              <img class="h-10 w-auto" :src="logo" alt="TODOS logo" />
-              <span class="hidden md:block text-white text-2xl font-bold ml-2"
-                >TODOS</span
-              >
+              <AppLogo class="text-white" aria-label="TODOS home" />
             </RouterLink>
             <div class="flex flex-wrap items-center gap-1">
               <RouterLink to="/" :class="linkClass" :exact-active-class="activeClass">Home</RouterLink>

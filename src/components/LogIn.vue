@@ -5,7 +5,7 @@
       @submit.prevent="submit"
       novalidate
     >
-      <img class="h-20 w-auto" :src="logo" alt="TODOS logo" />
+      <AppLogo :size="64" :show-text="false" class="text-green-700" />
       <h1 class="font-bold text-green-700 text-3xl">LOG IN</h1>
       <label for="email" class="sr-only">Email</label>
       <input
@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import logo from "@/assets/bp.png";
+import AppLogo from "@/components/ui/AppLogo.vue";
 import { ref } from "vue";
 import { useAuth } from "@/composables/useAuth.ts";
 import { useRouter } from "vue-router";

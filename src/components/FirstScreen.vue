@@ -4,7 +4,7 @@
     <div
       class="bg-white py-2 px-3 rounded-xl min-h-36 max-w-sm w-full gap-2 flex flex-col items-center"
     >
-    <img class="h-20 w-auto" :src="logo" alt="TODOS logo" />
+    <AppLogo :size="64" :show-text="false" class="text-green-700" />
       <p class="font-bold text-black text-xl">WELCOME TO OUR PLATFORM!</p>
       <RouterLink
         to="/login"
@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import logo from "@/assets/bp.png";
+import AppLogo from "@/components/ui/AppLogo.vue";
 import { useRouter } from "vue-router";
 import { enterGuestMode } from "@/composables/useAuth";
 
