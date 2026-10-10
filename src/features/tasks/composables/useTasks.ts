@@ -1,7 +1,8 @@
 import { computed, h, onMounted, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import type { Label, Task } from "@/features/tasks/model/types";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { storeToRefs } from "pinia";
 import {
   applyReorder,
   countTasks,
@@ -16,8 +17,6 @@ import {
   type TaskRepository,
 } from "@/features/tasks/repositories";
 import { HttpError, getErrorMessage } from "@/shared/api";
-
-const { isRegistered, logout } = useAuth();
 
 const UNDO_TIMEOUT_MS = 5000;
 
@@ -36,6 +35,8 @@ const createDraftTask = (): NewTask => ({
 
 export function useTasks() {
   const toast = useToast();
+  const auth = useAuthStore();
+  const { isRegistered } = storeToRefs(auth);
 
   const tasks = ref<Task[]>([]);
   const query = ref<TaskQuery>(createDefaultQuery());
@@ -47,8 +48,8 @@ export function useTasks() {
   );
 
   function handleError(error: unknown, fallback: string) {
+    // The HTTP client already logs out on 401; just explain what happened.
     if (error instanceof HttpError && error.isUnauthorized) {
-      logout();
       toast.error("Your session has expired. Please log in again.");
       return;
     }

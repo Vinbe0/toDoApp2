@@ -18,12 +18,13 @@
 import { useRouter } from "vue-router";
 import AuthLayout from "@/features/auth/components/AuthLayout.vue";
 import BaseButton from "@/shared/ui/BaseButton.vue";
-import { enterGuestMode } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 const router = useRouter();
+const auth = useAuthStore();
 
 const continueAsGuest = () => {
-  enterGuestMode();
+  auth.logout();
   router.push("/todo");
 };
 </script>

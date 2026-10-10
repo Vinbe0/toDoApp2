@@ -48,7 +48,7 @@ import BaseInput from "@/shared/ui/BaseInput.vue";
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import { RouterLink } from "vue-router";
 import { ref } from "vue";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useRouter } from "vue-router";
 import { useTasks } from "@/features/tasks/composables/useTasks";
 
@@ -57,7 +57,7 @@ const email = ref<string>("");
 const password = ref<string>("");
 const errorMessage = ref<string>("");
 const isLoading = ref<boolean>(false);
-const { login } = useAuth();
+const auth = useAuthStore();
 const { importGuestTasks } = useTasks();
 
 const validate = () => {
@@ -75,7 +75,7 @@ const submit = async () => {
   if (errorMessage.value) return;
   isLoading.value = true;
   try {
-    await login(email.value, password.value);
+    await auth.login(email.value, password.value);
     try {
       await importGuestTasks();
     } catch {

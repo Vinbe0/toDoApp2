@@ -9,9 +9,10 @@ import TaskFilters from "@/features/tasks/components/TaskFilters.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import { useTasks } from "@/features/tasks/composables/useTasks";
 import { LABELS } from "@/features/tasks/model/task";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { storeToRefs } from "pinia";
 
-const { isRegistered } = useAuth();
+const { isRegistered } = storeToRefs(useAuthStore());
 const {
   tasks,
   query,

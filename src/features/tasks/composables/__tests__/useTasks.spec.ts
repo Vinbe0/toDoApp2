@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, nextTick } from "vue";
 import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import type { Task } from "@/features/tasks/model/types";
 
 vi.mock("vue-toastification", () => {
@@ -27,6 +28,8 @@ async function setup(tasks: Task[]) {
   localStorage.setItem("guest-tasks", JSON.stringify(tasks));
   const { useTasks } = await import("@/features/tasks/composables/useTasks");
   let result!: ReturnType<typeof useTasks>;
+  const pinia = createPinia();
+  setActivePinia(pinia);
   mount(
     defineComponent({
       setup() {
@@ -34,6 +37,7 @@ async function setup(tasks: Task[]) {
         return () => null;
       },
     }),
+    { global: { plugins: [pinia] } },
   );
   await nextTick();
   return result;

@@ -52,12 +52,12 @@ import BaseInput from "@/shared/ui/BaseInput.vue";
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import { RouterLink } from "vue-router";
 import { ref } from "vue";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useTasks } from "@/features/tasks/composables/useTasks";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const { register } = useAuth();
+const auth = useAuthStore();
 const { importGuestTasks } = useTasks();
 const email = ref<string>("");
 const password = ref<string>("");
@@ -79,7 +79,7 @@ const submit = async () => {
   if (errorMessage.value) return;
   isLoading.value = true;
   try {
-    await register(email.value, password.value);
+    await auth.register(email.value, password.value);
     try {
       await importGuestTasks();
     } catch {

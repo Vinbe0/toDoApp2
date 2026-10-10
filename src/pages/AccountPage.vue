@@ -3,11 +3,13 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import BaseCard from "@/shared/ui/BaseCard.vue";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { storeToRefs } from "pinia";
 import { useTasks } from "@/features/tasks/composables/useTasks";
 
 const router = useRouter();
-const { logout, user } = useAuth();
+const auth = useAuthStore();
+const { user } = storeToRefs(auth);
 const { tasks } = useTasks();
 
 const initials = computed(() => user.value?.email.slice(0, 2).toUpperCase() ?? "?");
@@ -22,7 +24,7 @@ const stats = computed(() => {
 });
 
 const submit = () => {
-  logout();
+  auth.logout();
   router.push("/login");
 };
 </script>

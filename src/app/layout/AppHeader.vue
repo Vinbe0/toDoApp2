@@ -4,9 +4,10 @@ import { RouterLink, useRoute } from "vue-router";
 import AppLogo from "@/shared/ui/AppLogo.vue";
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import ThemeToggle from "@/shared/theme/ThemeToggle.vue";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { storeToRefs } from "pinia";
 
-const { isRegistered } = useAuth();
+const { isRegistered } = storeToRefs(useAuthStore());
 const route = useRoute();
 const menuOpen = ref(false);
 

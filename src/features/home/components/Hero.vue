@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import BaseBadge from "@/shared/ui/BaseBadge.vue";
-import { useAuth } from "@/features/auth/composables/useAuth";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { storeToRefs } from "pinia";
 
-const { isRegistered } = useAuth();
+const { isRegistered } = storeToRefs(useAuthStore());
 
 const previewTasks = [
   { text: "Finish portfolio README", priority: "High", tone: "red", done: true },
