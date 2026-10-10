@@ -57,6 +57,7 @@ Task and label routes require `Authorization: Bearer <token>`.
 | POST   | `/api/auth/register`   | `{ email, password }` (password ≥ 8 chars)                            | `201 { token, user }`                 |
 | POST   | `/api/auth/login`      | `{ email, password }`                                                 | `200 { token, user }`                 |
 | GET    | `/api/auth/me`         | —                                                                     | `200 { user }`                        |
+| DELETE | `/api/auth/me`         | `{ password }`                                                        | `204`, `403` if the password is wrong |
 | GET    | `/api/tasks?labelId=…` | —                                                                     | `200 Task[]` in list order            |
 | POST   | `/api/tasks`           | `{ title, description?, dueDate?, priority?, labelIds?, completed? }` | `201 Task`                            |
 | PUT    | `/api/tasks/:id`       | any subset of the create fields                                       | `200 Task`                            |
@@ -71,6 +72,7 @@ Task and label routes require `Authorization: Bearer <token>`.
 - `Task` = `{ id, title, description, dueDate, priority, labelIds, completed, position }`
 - `Label` = `{ id, name, color }`. Names are 1–30 characters and unique per user, ignoring case. `color` is one of `red, orange, amber, green, teal, sky, blue, violet, pink, slate`; when omitted, an unused one is picked.
 - New accounts start with the labels Work, Shopping and University. Tasks can only use the caller's own labels.
+- Deleting the account removes all its tasks and labels. Every authenticated request checks that the account still exists, so older tokens stop working immediately.
 
 ## Security
 
