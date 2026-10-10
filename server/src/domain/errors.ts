@@ -9,7 +9,16 @@ export class DomainError extends Error {
   }
 }
 
-export class ValidationError extends DomainError {}
+export type ValidationIssue = { field?: string; message: string };
+
+export class ValidationError extends DomainError {
+  constructor(
+    message: string,
+    readonly details: ValidationIssue[] = [],
+  ) {
+    super(message);
+  }
+}
 
 export class NotFoundError extends DomainError {
   constructor(resource: string, id: string) {

@@ -1,3 +1,5 @@
+import { ValidationError } from "./errors.js";
+
 export type Priority = "low" | "medium" | "high";
 export type Label = "work" | "shopping" | "university";
 
@@ -55,16 +57,16 @@ export class Task {
 
   private validate(): void {
     if (!this.title || this.title.trim() === "") {
-      throw new Error("Task title cannot be empty");
+      throw new ValidationError("Task title cannot be empty");
     }
     if (this.dueDate && isNaN(Date.parse(this.dueDate))) {
-      throw new Error("Invalid due date. Expected a valid date string or null.");
+      throw new ValidationError("Invalid due date. Expected a valid date string or null.");
     }
     if (!PRIORITIES.includes(this.priority)) {
-      throw new Error('Invalid priority level. Expected "low", "medium", or "high".');
+      throw new ValidationError('Invalid priority level. Expected "low", "medium", or "high".');
     }
     if (!ALLOWED_LABELS.includes(this.label)) {
-      throw new Error('Invalid label. Expected "work", "shopping", or "university".');
+      throw new ValidationError('Invalid label. Expected "work", "shopping", or "university".');
     }
   }
 

@@ -45,6 +45,64 @@ describe("HTTP API", () => {
     });
   });
 
+  describe("validation", () => {
+    it("rejects invalid fields with 400 and per-field details", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+
+      const res = await api
+        .post("/api/tasks")
+        .set(auth)
+        .send({ title: "x", priority: "urgent", dueDate: "someday" });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("ValidationError");
+      expect(res.body.details.map((d: { field: string }) => d.field)).toEqual([
+        "dueDate",
+        "priority",
+      ]);
+    });
+
+    it("rejects unknown fields and empty updates", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+      const { body: task } = await api.post("/api/tasks").set(auth).send({ title: "x" });
+
+      expect(
+        (await api.post("/api/tasks").set(auth).send({ title: "x", userId: "u2" })).status,
+      ).toBe(400);
+      expect((await api.put(`/api/tasks/${task.id}`).set(auth).send({})).status).toBe(400);
+    });
+
+    it("returns 400 for malformed JSON", async () => {
+      const { api } = createTestApp();
+      const res = await api
+        .post("/api/auth/login")
+        .set("Content-Type", "application/json")
+        .send("{not json");
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Request body is not valid JSON");
+    });
+
+    it("normalizes emails so login is case-insensitive", async () => {
+      const { api } = createTestApp();
+      await api
+        .post("/api/auth/register")
+        .send({ email: " Me@Example.com ", password: "password123" });
+      const res = await api
+        .post("/api/auth/login")
+        .send({ email: "me@example.com", password: "password123" });
+      expect(res.status).toBe(200);
+      expect(res.body.user.email).toBe("me@example.com");
+    });
+
+    it("validates the label filter", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+      expect((await api.get("/api/tasks?label=gym").set(auth)).status).toBe(400);
+    });
+  });
+
   describe("tasks", () => {
     it("requires a token", async () => {
       const { api } = createTestApp();

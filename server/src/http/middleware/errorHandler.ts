@@ -21,7 +21,14 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     res.status(statusFor(err)).json({
       error: err.name,
       message: err.message,
+      ...(err instanceof ValidationError && err.details.length ? { details: err.details } : {}),
     });
+    return;
+  }
+
+  // Malformed JSON or an oversized body, reported by express.json().
+  if (isBodyParserError(err)) {
+    res.status(err.status).json({ error: "BadRequest", message: "Request body is not valid JSON" });
     return;
   }
 
@@ -30,6 +37,10 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     error: "InternalServerError",
     message: "Something went wrong. Please try again later.",
   });
+}
+
+function isBodyParserError(err: Error): err is Error & { status: number } {
+  return "type" in err && "status" in err && typeof err.status === "number" && err.status < 500;
 }
 
 export function notFoundHandler(_req: Request, res: Response): void {

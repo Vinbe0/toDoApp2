@@ -1,3 +1,5 @@
+import { ValidationError } from "./errors.js";
+
 /** Value object: an email address that is valid by construction. */
 export class Email {
   readonly address: string;
@@ -5,7 +7,7 @@ export class Email {
   constructor(address: string) {
     this.address = address;
     if (!this.address || !this.address.includes("@")) {
-      throw new Error("Invalid email address");
+      throw new ValidationError("Invalid email address");
     }
   }
 }
