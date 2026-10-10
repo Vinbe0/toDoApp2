@@ -7,67 +7,80 @@ import { storeToRefs } from "pinia";
 const { isRegistered } = storeToRefs(useAuthStore());
 
 const previewTasks = [
-  { text: "Finish portfolio README", priority: "High", tone: "red", done: true },
-  { text: "Review pull request", priority: "Medium", tone: "amber", done: false },
-  { text: "Plan next sprint", priority: "Low", tone: "blue", done: false },
+  {
+    text: "Submit the lab report",
+    meta: "Overdue · yesterday",
+    priority: "High",
+    tone: "red",
+    done: false,
+  },
+  {
+    text: "Review pull request #4",
+    meta: "Due today",
+    priority: "Medium",
+    tone: "amber",
+    done: false,
+  },
+  { text: "Buy coffee beans", meta: "#Shopping", priority: "Low", tone: "blue", done: false },
+  { text: "Set up the project", meta: "#Work", priority: "Medium", tone: "amber", done: true },
 ] as const;
 </script>
 
 <template>
-  <section class="relative overflow-hidden border-b border-border bg-surface">
+  <section class="border-b border-border bg-surface">
     <div
-      class="pointer-events-none absolute -top-40 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-brand-400/20 blur-3xl"
-      aria-hidden="true"
-    />
-    <div
-      class="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-2"
+      class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1fr_28rem]"
     >
       <div>
-        <BaseBadge tone="brand" class="mb-4">Free · No sign-up required</BaseBadge>
-        <h1 class="text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
-          Plan your day. <span class="text-brand-600">Get it done.</span>
+        <h1 class="max-w-xl text-4xl font-bold tracking-tight text-fg sm:text-5xl">
+          A to-do list that stays out of your way.
         </h1>
-        <p class="mt-4 max-w-lg text-lg text-fg-muted">
-          TODOS keeps your tasks organized with priorities, deadlines and labels. Start as a guest
-          in seconds, or create an account to keep your tasks synced.
+        <p class="mt-5 max-w-lg text-lg leading-relaxed text-fg-muted">
+          Write tasks down, give them a deadline and a priority, and see what's due first. No
+          account needed: your list lives in the browser until you decide to sign up.
         </p>
-        <div class="mt-8 flex flex-wrap gap-3">
+        <div class="mt-8 flex flex-wrap items-center gap-3">
           <BaseButton to="/todo" size="lg">
-            {{ isRegistered ? "Open my tasks" : "Start planning" }}
-            <i class="pi pi-arrow-right" aria-hidden="true" />
+            {{ isRegistered ? "Open my tasks" : "Start a list" }}
           </BaseButton>
-          <BaseButton v-if="!isRegistered" to="/register" variant="secondary" size="lg">
-            Create account
+          <BaseButton v-if="!isRegistered" to="/login" variant="ghost" size="lg">
+            I have an account
           </BaseButton>
         </div>
       </div>
 
-      <div
-        class="rounded-2xl border border-border bg-bg p-4 shadow-xl shadow-brand-900/5"
-        aria-hidden="true"
-      >
-        <div class="mb-3 flex items-center justify-between px-1">
-          <p class="font-semibold text-fg">Today</p>
-          <p class="text-xs text-fg-subtle">2 active · 1 completed</p>
+      <!-- Static example styled like the real task list. -->
+      <div class="rounded-xl border border-border bg-bg" aria-hidden="true">
+        <div class="flex items-center justify-between border-b border-border px-4 py-3">
+          <p class="text-sm font-semibold text-fg">My tasks</p>
+          <p class="text-xs text-fg-subtle">3 active · 1 completed</p>
         </div>
-        <ul class="grid gap-2">
+        <ul class="divide-y divide-border">
           <li
             v-for="task in previewTasks"
             :key="task.text"
-            class="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3"
+            class="flex items-start gap-3 px-4 py-3"
           >
             <span
-              class="grid size-5 place-items-center rounded-full border-2"
-              :class="task.done ? 'border-brand-600 bg-brand-600 text-white' : 'border-border'"
+              class="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-2"
+              :class="task.done ? 'border-fg-subtle bg-fg-subtle text-bg' : 'border-fg-subtle'"
             >
-              <i v-if="task.done" class="pi pi-check text-[10px]" />
+              <i v-if="task.done" class="pi pi-check text-[8px]" />
             </span>
-            <span
-              class="flex-1 text-sm font-medium"
-              :class="task.done && 'text-fg-subtle line-through'"
-            >
-              {{ task.text }}
-            </span>
+            <div class="min-w-0 flex-1">
+              <p
+                class="text-sm font-medium text-fg"
+                :class="task.done && 'text-fg-subtle line-through'"
+              >
+                {{ task.text }}
+              </p>
+              <p
+                class="mt-0.5 text-xs"
+                :class="task.meta.startsWith('Overdue') ? 'text-red-600' : 'text-fg-subtle'"
+              >
+                {{ task.meta }}
+              </p>
+            </div>
             <BaseBadge :tone="task.tone">{{ task.priority }}</BaseBadge>
           </li>
         </ul>

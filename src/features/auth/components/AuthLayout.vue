@@ -6,26 +6,20 @@ defineProps<{ title: string; subtitle?: string }>();
 </script>
 
 <template>
-  <div class="grid min-h-screen bg-bg lg:grid-cols-2">
-    <aside
-      class="relative hidden overflow-hidden bg-brand-700 p-12 text-white lg:flex lg:flex-col lg:justify-between"
-    >
-      <div
-        class="pointer-events-none absolute -right-24 -bottom-24 size-96 rounded-full bg-brand-400/30 blur-3xl"
-        aria-hidden="true"
-      />
-      <RouterLink to="/" class="relative" aria-label="TODOS home">
+  <div class="grid min-h-screen bg-bg lg:grid-cols-[minmax(0,26rem)_1fr]">
+    <aside class="hidden border-r border-border bg-surface p-12 lg:flex lg:flex-col">
+      <RouterLink to="/" aria-label="TODOS home">
         <AppLogo />
       </RouterLink>
-      <div class="relative max-w-md">
-        <p class="text-3xl leading-snug font-bold">
-          “The secret of getting ahead is getting started.”
-        </p>
-        <p class="mt-3 text-brand-100">— Mark Twain</p>
+
+      <div class="my-auto max-w-sm">
+        <p class="text-sm font-semibold text-fg">With an account</p>
+        <ul class="mt-4 divide-y divide-border border-y border-border text-sm text-fg-muted">
+          <li class="py-3">Your tasks are stored on the server, not just in this browser.</li>
+          <li class="py-3">Labels, deadlines and your manual order are kept as they are.</li>
+          <li class="py-3">Tasks you made as a guest can be imported when you sign up.</li>
+        </ul>
       </div>
-      <p class="relative text-sm text-brand-100">
-        Priorities, deadlines and labels in one simple list.
-      </p>
     </aside>
 
     <div class="flex flex-col items-center justify-center px-4 py-12 sm:px-6">
