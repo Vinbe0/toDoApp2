@@ -33,7 +33,7 @@ const views: Array<{ value: FilterMode; label: string; icon: string; count?: "al
 </script>
 
 <template>
-  <BaseCard as="aside" class="grid gap-5 lg:sticky lg:top-20">
+  <BaseCard as="aside" class="grid min-w-0 gap-4 lg:sticky lg:top-20 lg:gap-5">
     <BaseInput
       v-model="search"
       type="search"
@@ -46,12 +46,12 @@ const views: Array<{ value: FilterMode; label: string; icon: string; count?: "al
       </template>
     </BaseInput>
 
-    <nav aria-label="Task views" class="grid gap-0.5">
+    <nav aria-label="Task views" class="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] lg:mx-0 lg:grid lg:gap-0.5 lg:overflow-visible lg:p-0">
       <button
         v-for="view in views"
         :key="view.value"
         type="button"
-        class="flex items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors"
+        class="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors lg:gap-3"
         :class="
           filter === view.value
             ? 'bg-brand-500/10 text-brand-700 dark:text-brand-300'
@@ -61,7 +61,7 @@ const views: Array<{ value: FilterMode; label: string; icon: string; count?: "al
         @click="filter = view.value"
       >
         <i :class="['pi', view.icon, 'text-sm']" aria-hidden="true" />
-        <span class="flex-1">{{ view.label }}</span>
+        <span class="lg:flex-1">{{ view.label }}</span>
         <span v-if="view.count" class="text-xs text-fg-subtle">{{ counts[view.count] }}</span>
       </button>
     </nav>
@@ -83,7 +83,7 @@ const views: Array<{ value: FilterMode; label: string; icon: string; count?: "al
       </label>
     </div>
 
-    <BaseButton variant="ghost" size="sm" class="justify-start text-red-600 hover:!bg-red-500/10 hover:!text-red-600" @click="emit('clearCompleted')">
+    <BaseButton variant="ghost" size="sm" class="justify-self-start text-red-600 lg:justify-self-stretch lg:justify-start hover:!bg-red-500/10 hover:!text-red-600" @click="emit('clearCompleted')">
       <i class="pi pi-trash" aria-hidden="true" /> Clear completed
     </BaseButton>
   </BaseCard>

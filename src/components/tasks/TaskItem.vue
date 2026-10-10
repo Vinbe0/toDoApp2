@@ -41,7 +41,7 @@ watch(
   >
     <span
       v-if="draggable"
-      class="drag-handle mt-0.5 cursor-grab text-fg-subtle opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
+      class="drag-handle mt-0.5 hidden cursor-grab sm:block text-fg-subtle opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
       aria-hidden="true"
       title="Drag to reorder"
     >
