@@ -45,6 +45,13 @@ describe("createHttpClient", () => {
     expect(lastRequest().headers.get("Authorization")).toBe("Bearer secret");
   });
 
+  it("can send a body with DELETE", async () => {
+    const { client, lastRequest } = setup(new Response(null, { status: 204 }));
+    await client.delete("/api/auth/me", { password: "secret" });
+    expect(lastRequest().init.method).toBe("DELETE");
+    expect(lastRequest().init.body).toBe('{"password":"secret"}');
+  });
+
   it("returns null for 204 No Content", async () => {
     const { client } = setup(new Response(null, { status: 204 }));
     await expect(client.delete("/api/tasks/1")).resolves.toBeNull();

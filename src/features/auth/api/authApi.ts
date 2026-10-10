@@ -10,6 +10,8 @@ export function createAuthApi(client: HttpClient) {
     login: (email: string, password: string) =>
       client.post<AuthResponse>("/api/auth/login", { email, password }),
     me: () => client.get<{ user: AuthUser }>("/api/auth/me"),
+    /** Permanently deletes the signed-in account; the password must be re-entered. */
+    deleteAccount: (password: string) => client.delete("/api/auth/me", { password }),
   };
 }
 

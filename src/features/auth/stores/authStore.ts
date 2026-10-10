@@ -51,6 +51,15 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
+  /**
+   * Deletes the account on the server, then ends the session. Throws (and
+   * keeps the session) if the password is wrong or the request fails.
+   */
+  async function deleteAccount(password: string) {
+    await authApi.deleteAccount(password);
+    logout();
+  }
+
   /** Ends the session and falls back to guest mode. */
   function logout() {
     token.value = null;
@@ -70,6 +79,7 @@ export const useAuthStore = defineStore("auth", () => {
     login,
     register,
     logout,
+    deleteAccount,
     validateSession,
   };
 });
