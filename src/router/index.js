@@ -6,6 +6,7 @@ import WelcomeView from '@/views/WelcomeView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LogInView from '@/views/LogInView.vue'
 import AccountView from '@/views/AccountView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,26 +39,36 @@ const router = createRouter({
             path: '/register',
             name: 'register',
             component: RegisterView,
-            meta: { showNavbar: false }
+            meta: { showNavbar: false, guestOnly: true }
         },
         {
             path: '/login',
             name: 'login',
             component: LogInView,
-            meta: { showNavbar: false }
+            meta: { showNavbar: false, guestOnly: true }
         },
         {
             path: '/account',
             name: 'account',
             component: AccountView,
             meta: { showNavbar: true, requiresAuth: true }
+        },
+        {
+            path: '/:pathMatch(.*)*',
+            name: 'not-found',
+            component: NotFoundView,
+            meta: { showNavbar: true }
         }
-    ]
+    ],
+    scrollBehavior() {
+        return { top: 0 }
+    }
 })
 
 router.beforeEach((to) => {
   const token = localStorage.getItem("token");
-  if (to.meta.requiresAuth && !token) return "/login";
+  if (to.meta.requiresAuth && !token) return { name: "login" };
+  if (to.meta.guestOnly && token) return { name: "account" };
   return true;
 })
 

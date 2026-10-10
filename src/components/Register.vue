@@ -3,7 +3,7 @@
     <div
       class="bg-white py-3 px-3 rounded-xl min-h-36 max-w-sm w-full gap-3 flex flex-col items-center"
     >
-      <img class="h-20 w-auto" :src="logo" alt="Vue Jobs" />
+      <img class="h-20 w-auto" :src="logo" alt="TODOS logo" />
       <h2 class="font-bold text-green-700 text-3xl">REGISTRATION FORM</h2>
       <input
         type="email"
