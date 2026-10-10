@@ -27,8 +27,14 @@ describe("migrations", () => {
     const { rows } = await db.query<{ column_name: string }>(
       "SELECT column_name FROM information_schema.columns WHERE table_name = 'tasks'",
     );
-    expect(rows.map((r) => r.column_name)).toContain("labels");
+    expect(rows.map((r) => r.column_name)).not.toContain("labels");
     expect(rows.map((r) => r.column_name)).not.toContain("label");
+    const { rows: tables } = await db.query<{ table_name: string }>(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
+    );
+    expect(tables.map((t) => t.table_name)).toEqual(
+      expect.arrayContaining(["users", "tasks", "labels", "task_labels"]),
+    );
   });
 
   it("convert text positions to integers, keeping each user's order", async () => {
@@ -62,7 +68,7 @@ describe("migrations", () => {
 
   it("keep each task's old single label when moving to multiple labels", async () => {
     db = new PGlite();
-    const [init, ...rest] = migrations;
+    const [init, ...rest] = migrations.filter((file) => file < "0003");
     await runMigration(db, init!);
     await db.exec(`
       INSERT INTO users (id, email, password_hash)
@@ -76,5 +82,51 @@ describe("migrations", () => {
 
     const { rows } = await db.query<{ labels: string[] }>("SELECT labels FROM tasks");
     expect(rows).toEqual([{ labels: ["shopping"] }]);
+  });
+
+  it("turn old tag names into per-user labels and link tasks to them", async () => {
+    db = new PGlite();
+    for (const file of migrations.filter((f) => f < "0005")) await runMigration(db, file);
+    await db.exec(`
+      INSERT INTO users (id, email, password_hash) VALUES
+        ('00000000-0000-0000-0000-000000000001', 'a@b.co', 'x'),
+        ('00000000-0000-0000-0000-000000000002', 'c@d.co', 'x');
+      INSERT INTO tasks (id, user_id, title, labels, position) VALUES
+        ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-000000000001',
+         'Report', '{work,shopping}', 0),
+        ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-000000000001',
+         'Run', '{gym}', 1);
+    `);
+
+    for (const file of migrations.filter((f) => f >= "0005")) await runMigration(db, file);
+
+    const labelsOf = async (userId: string) =>
+      (
+        await db.query<{ name: string }>(
+          `SELECT name FROM labels WHERE user_id = '${userId}' ORDER BY seq`,
+        )
+      ).rows.map((r) => r.name);
+    // Everyone gets the defaults; other old tags are kept as labels too.
+    expect(await labelsOf("00000000-0000-0000-0000-000000000001")).toEqual([
+      "Work",
+      "Shopping",
+      "University",
+      "Gym",
+    ]);
+    expect(await labelsOf("00000000-0000-0000-0000-000000000002")).toEqual([
+      "Work",
+      "Shopping",
+      "University",
+    ]);
+
+    const { rows } = await db.query<{ title: string; name: string }>(`
+      SELECT t.title, l.name FROM task_labels tl
+      JOIN tasks t ON t.id = tl.task_id JOIN labels l ON l.id = tl.label_id
+      ORDER BY t.title, l.seq`);
+    expect(rows).toEqual([
+      { title: "Report", name: "Work" },
+      { title: "Report", name: "Shopping" },
+      { title: "Run", name: "Gym" },
+    ]);
   });
 });

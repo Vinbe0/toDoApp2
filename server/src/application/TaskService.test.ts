@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { NotFoundError, ValidationError } from "../domain/errors.js";
+import { InMemoryLabelRepository } from "../infrastructure/memory/InMemoryLabelRepository.js";
 import { InMemoryTaskRepository } from "../infrastructure/memory/InMemoryTaskRepository.js";
 import { TaskService } from "./TaskService.js";
 
 describe("TaskService", () => {
   let service: TaskService;
+  let labels: InMemoryLabelRepository;
 
   beforeEach(() => {
-    service = new TaskService(new InMemoryTaskRepository());
+    labels = new InMemoryLabelRepository();
+    service = new TaskService(new InMemoryTaskRepository(), labels);
   });
 
   it("creates a task with a trimmed title and defaults", async () => {
@@ -33,12 +36,30 @@ describe("TaskService", () => {
     expect(titles).toEqual(["First", "Second"]);
   });
 
-  it("filters by label and validates the filter", async () => {
-    await service.createTask("u1", { title: "Work", labels: ["work"] });
-    await service.createTask("u1", { title: "Milk", labels: ["shopping", "university"] });
+  const label = (userId: string, name: string) =>
+    labels.createLabel({ id: crypto.randomUUID(), userId, name, color: "sky" });
 
-    expect((await service.getAllTasks("u1", "shopping")).map((t) => t.title)).toEqual(["Milk"]);
-    await expect(service.getAllTasks("u1", "gym")).rejects.toBeInstanceOf(ValidationError);
+  it("filters by label", async () => {
+    const work = await label("u1", "Work");
+    const shopping = await label("u1", "Shopping");
+    await service.createTask("u1", { title: "Report", labelIds: [work.id] });
+    await service.createTask("u1", { title: "Milk", labelIds: [shopping.id] });
+
+    expect((await service.getAllTasks("u1", shopping.id)).map((t) => t.title)).toEqual(["Milk"]);
+  });
+
+  it("only accepts the user's own labels", async () => {
+    const mine = await label("u1", "Mine");
+    const theirs = await label("u2", "Theirs");
+
+    await expect(
+      service.createTask("u1", { title: "x", labelIds: [mine.id, theirs.id] }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    const task = await service.createTask("u1", { title: "x", labelIds: [mine.id] });
+    await expect(
+      service.updateTask("u1", task.id, { labelIds: [theirs.id] }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(service.getAllTasks("u1", theirs.id)).rejects.toBeInstanceOf(ValidationError);
   });
 
   it("updates only the given fields", async () => {

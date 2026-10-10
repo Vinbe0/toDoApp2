@@ -3,16 +3,16 @@ import BaseBadge from "@/shared/ui/BaseBadge.vue";
 import FeatureStory from "@/features/home/components/FeatureStory.vue";
 import TaskSidebar from "@/features/tasks/components/TaskSidebar.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
-import { sampleTasks } from "@/features/home/data/sampleTasks";
+import { sampleLabelsFor, sampleTasks } from "@/features/home/data/sampleTasks";
 import { createDefaultQuery } from "@/features/tasks/model/query";
-import { LABELS } from "@/features/tasks/model/task";
+import { DEFAULT_LABELS } from "@/features/tasks/model/label";
 
 const byDeadline = [sampleTasks.labReport, sampleTasks.pullRequest, sampleTasks.coffee];
 const filterQuery = {
   ...createDefaultQuery(),
   status: "active" as const,
   sort: "priority" as const,
-  labels: ["work" as const],
+  labelIds: ["work"],
 };
 </script>
 
@@ -25,7 +25,13 @@ const filterQuery = {
       tint="peach"
     >
       <ul class="grid gap-2 p-4">
-        <TaskItem v-for="task in byDeadline" :key="task.id" :task="task" :draggable="false" />
+        <TaskItem
+          v-for="task in byDeadline"
+          :key="task.id"
+          :task="task"
+          :labels="sampleLabelsFor(task)"
+          :draggable="false"
+        />
       </ul>
     </FeatureStory>
 
@@ -39,7 +45,7 @@ const filterQuery = {
       <div class="mx-auto max-w-xs p-5">
         <TaskSidebar
           :query="filterQuery"
-          :labels="LABELS"
+          :labels="DEFAULT_LABELS"
           :counts="{ all: 5, active: 4, completed: 1 }"
           :label-counts="{ work: 3, shopping: 1, university: 1 }"
           account-name="Guest"
@@ -60,8 +66,16 @@ const filterQuery = {
           <BaseBadge>Guest mode · saved in this browser</BaseBadge>
         </div>
         <ul class="grid gap-2">
-          <TaskItem :task="sampleTasks.coffee" :draggable="false" />
-          <TaskItem :task="sampleTasks.setup" :draggable="false" />
+          <TaskItem
+            :task="sampleTasks.coffee"
+            :labels="sampleLabelsFor(sampleTasks.coffee)"
+            :draggable="false"
+          />
+          <TaskItem
+            :task="sampleTasks.setup"
+            :labels="sampleLabelsFor(sampleTasks.setup)"
+            :draggable="false"
+          />
         </ul>
       </div>
     </FeatureStory>

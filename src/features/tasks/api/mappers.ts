@@ -1,5 +1,8 @@
 import type { Label, Priority, Task } from "@/features/tasks/model/types";
 
+/** A label as the backend sends it. */
+export type ApiLabel = Label;
+
 /** A task as the backend sends it (see server/src/http/presenters.ts). */
 export type ApiTask = {
   id: string;
@@ -7,7 +10,7 @@ export type ApiTask = {
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  labels?: Label[];
+  labelIds?: string[];
   completed?: boolean;
   position?: number;
 };
@@ -20,7 +23,7 @@ export function toUiTask(apiTask: ApiTask): Task {
     deadline: apiTask.dueDate ?? null,
     priority: apiTask.priority ?? "low",
     completed: !!apiTask.completed,
-    labels: apiTask.labels ?? [],
+    labelIds: apiTask.labelIds ?? [],
   };
 }
 
@@ -30,7 +33,7 @@ export function toApiCreateTask(draft: Partial<Task>) {
     description: draft.description ?? "",
     dueDate: draft.deadline ?? null,
     priority: draft.priority ?? "low",
-    labels: draft.labels ?? [],
+    labelIds: draft.labelIds ?? [],
     ...(draft.completed !== undefined ? { completed: draft.completed } : {}),
   };
 }
@@ -41,7 +44,7 @@ export function toApiUpdateTask(patch: Partial<Task>) {
     ...(patch.description !== undefined ? { description: patch.description } : {}),
     ...(patch.deadline !== undefined ? { dueDate: patch.deadline } : {}),
     ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-    ...(patch.labels !== undefined ? { labels: patch.labels } : {}),
+    ...(patch.labelIds !== undefined ? { labelIds: patch.labelIds } : {}),
     ...(patch.completed !== undefined ? { completed: patch.completed } : {}),
   };
 }

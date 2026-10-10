@@ -19,7 +19,7 @@ const task = (overrides: Partial<Task>): Task => ({
   completed: false,
   deadline: null,
   priority: "medium",
-  labels: [],
+  labelIds: [],
   ...overrides,
 });
 
@@ -46,14 +46,14 @@ describe("queryTasks", () => {
 
   it("matches any selected label by default and all when requested", () => {
     const list = [
-      task({ text: "Work", labels: ["work"] }),
-      task({ text: "Work + uni", labels: ["work", "university"] }),
-      task({ text: "Shopping", labels: ["shopping"] }),
+      task({ text: "Work", labelIds: ["work"] }),
+      task({ text: "Work + uni", labelIds: ["work", "university"] }),
+      task({ text: "Shopping", labelIds: ["shopping"] }),
     ];
-    const labels: TaskQuery["labels"] = ["work", "university"];
+    const labelIds: TaskQuery["labelIds"] = ["work", "university"];
 
-    expect(titles(queryTasks(list, query({ labels })))).toEqual(["Work", "Work + uni"]);
-    expect(titles(queryTasks(list, query({ labels, matchAllLabels: true })))).toEqual([
+    expect(titles(queryTasks(list, query({ labelIds })))).toEqual(["Work", "Work + uni"]);
+    expect(titles(queryTasks(list, query({ labelIds, matchAllLabels: true })))).toEqual([
       "Work + uni",
     ]);
   });
@@ -88,14 +88,14 @@ describe("queryTasks", () => {
 
   it("combines filters and sorting", () => {
     const list = [
-      task({ text: "Report draft", priority: "low", labels: ["work"] }),
-      task({ text: "Report final", priority: "high", labels: ["work"] }),
-      task({ text: "Report old", priority: "high", labels: ["work"], completed: true }),
-      task({ text: "Groceries", priority: "high", labels: ["shopping"] }),
+      task({ text: "Report draft", priority: "low", labelIds: ["work"] }),
+      task({ text: "Report final", priority: "high", labelIds: ["work"] }),
+      task({ text: "Report old", priority: "high", labelIds: ["work"], completed: true }),
+      task({ text: "Groceries", priority: "high", labelIds: ["shopping"] }),
     ];
     const result = queryTasks(
       list,
-      query({ status: "active", search: "report", labels: ["work"], sort: "priority" }),
+      query({ status: "active", search: "report", labelIds: ["work"], sort: "priority" }),
     );
     expect(titles(result)).toEqual(["Report final", "Report draft"]);
   });
@@ -119,11 +119,16 @@ describe("helpers", () => {
 
   it("counts open tasks per label", () => {
     const list = [
-      task({ labels: ["work"] }),
-      task({ labels: ["work", "shopping"] }),
-      task({ labels: ["work"], completed: true }),
+      task({ labelIds: ["work"] }),
+      task({ labelIds: ["work", "shopping"] }),
+      task({ labelIds: ["work"], completed: true }),
     ];
-    expect(countOpenByLabel(list, ["work", "shopping", "university"])).toEqual({
+    const labels = [
+      { id: "work", name: "Work", color: "sky" as const },
+      { id: "shopping", name: "Shopping", color: "amber" as const },
+      { id: "university", name: "University", color: "violet" as const },
+    ];
+    expect(countOpenByLabel(list, labels)).toEqual({
       work: 2,
       shopping: 1,
       university: 0,

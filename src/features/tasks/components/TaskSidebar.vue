@@ -1,16 +1,29 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { labelHashColor, labelName } from "@/features/tasks/components/taskDisplay";
+import { computed, ref } from "vue";
+import LabelMenu from "@/features/tasks/components/LabelMenu.vue";
+import LabelNameInput from "@/features/tasks/components/LabelNameInput.vue";
+import { labelTextColor } from "@/features/tasks/components/taskDisplay";
+import { nextLabelColor } from "@/features/tasks/model/label";
 import type { StatusFilter, TaskQuery } from "@/features/tasks/model/query";
-import type { Label } from "@/features/tasks/model/types";
+import type { Label, LabelColor } from "@/features/tasks/model/types";
 
-defineProps<{
+/** Label management; when omitted (e.g. in previews) labels are read-only. */
+export type LabelActions = {
+  create: (name: string) => Promise<boolean>;
+  rename: (id: string, name: string) => Promise<boolean>;
+  recolor: (id: string, color: LabelColor) => Promise<boolean>;
+  remove: (id: string) => Promise<void>;
+};
+
+const props = defineProps<{
   labels: readonly Label[];
   counts: Record<StatusFilter, number>;
-  labelCounts: Record<Label, number>;
+  /** Open tasks per label id. */
+  labelCounts: Record<string, number>;
   /** e.g. "Guest" or the account email. */
   accountName: string;
   accountHint: string;
+  labelActions?: LabelActions;
 }>();
 
 const emit = defineEmits<{ addTask: [] }>();
@@ -26,11 +39,25 @@ const search = computed({
   set: (value: string) => update({ search: value }),
 });
 
-const toggleLabel = (label: Label) => {
-  const labels = query.value.labels.includes(label)
-    ? query.value.labels.filter((item) => item !== label)
-    : [...query.value.labels, label];
-  update({ labels });
+const toggleLabel = (labelId: string) => {
+  const labelIds = query.value.labelIds.includes(labelId)
+    ? query.value.labelIds.filter((id) => id !== labelId)
+    : [...query.value.labelIds, labelId];
+  update({ labelIds });
+};
+
+const adding = ref(false);
+const renamingId = ref<string | null>(null);
+const menuFor = ref<string | null>(null);
+
+const openRename = (id: string) => {
+  menuFor.value = null;
+  renamingId.value = id;
+};
+
+const removeLabel = async (id: string) => {
+  menuFor.value = null;
+  await props.labelActions?.remove(id);
 };
 
 const views: Array<{ value: StatusFilter; label: string; icon: string }> = [
@@ -99,23 +126,82 @@ const itemActive = "bg-brand-500/10 font-medium text-brand-700 dark:text-brand-3
     </div>
 
     <div class="grid gap-0.5">
-      <p class="px-2 pb-1 text-xs font-semibold text-fg-subtle">Labels</p>
-      <button
-        v-for="label in labels"
-        :key="label"
-        type="button"
-        :class="[item, query.labels.includes(label) ? itemActive : itemIdle]"
-        :aria-pressed="query.labels.includes(label)"
-        @click="toggleLabel(label)"
-      >
-        <span :class="['w-5 text-center font-semibold', labelHashColor[label]]" aria-hidden="true"
-          >#</span
+      <div class="flex items-center justify-between px-2 pb-1">
+        <p class="text-xs font-semibold text-fg-subtle">Labels</p>
+        <button
+          v-if="labelActions"
+          type="button"
+          class="grid size-6 place-items-center rounded-md text-fg-subtle hover:bg-surface-muted hover:text-fg"
+          aria-label="Add label"
+          title="Add label"
+          @click="adding = true"
         >
-        <span class="flex-1">{{ labelName(label) }}</span>
-        <span class="text-xs text-fg-subtle">{{ labelCounts[label] }}</span>
-      </button>
+          <i class="pi pi-plus text-[10px]" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div v-for="label in labels" :key="label.id" class="group relative">
+        <LabelNameInput
+          v-if="renamingId === label.id && labelActions"
+          :initial="label.name"
+          :color="label.color"
+          :save="(name) => labelActions!.rename(label.id, name)"
+          @done="renamingId = null"
+        />
+        <template v-else>
+          <button
+            type="button"
+            :class="[item, 'pr-8', query.labelIds.includes(label.id) ? itemActive : itemIdle]"
+            :aria-pressed="query.labelIds.includes(label.id)"
+            @click="toggleLabel(label.id)"
+            @dblclick="labelActions && openRename(label.id)"
+          >
+            <span
+              :class="['w-5 text-center font-semibold', labelTextColor[label.color]]"
+              aria-hidden="true"
+              >#</span
+            >
+            <span class="min-w-0 flex-1 truncate">{{ label.name }}</span>
+            <span
+              class="text-xs text-fg-subtle"
+              :class="labelActions && 'group-focus-within:invisible group-hover:invisible'"
+              >{{ labelCounts[label.id] ?? 0 }}</span
+            >
+          </button>
+          <button
+            v-if="labelActions"
+            type="button"
+            class="absolute top-1/2 right-1 grid size-6 -translate-y-1/2 place-items-center rounded-md text-fg-subtle opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-surface hover:text-fg"
+            :class="menuFor === label.id && 'opacity-100'"
+            :aria-label="`Options for label ${label.name}`"
+            :aria-expanded="menuFor === label.id"
+            @click="menuFor = menuFor === label.id ? null : label.id"
+          >
+            <i class="pi pi-ellipsis-h text-xs" aria-hidden="true" />
+          </button>
+          <LabelMenu
+            v-if="menuFor === label.id && labelActions"
+            :label="label"
+            :open-task-count="labelCounts[label.id] ?? 0"
+            @close="menuFor = null"
+            @rename="openRename(label.id)"
+            @recolor="(color) => labelActions!.recolor(label.id, color)"
+            @remove="removeLabel(label.id)"
+          />
+        </template>
+      </div>
+
+      <LabelNameInput
+        v-if="adding && labelActions"
+        :color="nextLabelColor(labels)"
+        :save="labelActions.create"
+        @done="adding = false"
+      />
+      <p v-if="labelActions && !labels.length && !adding" class="px-2 text-xs text-fg-subtle">
+        No labels yet.
+      </p>
       <label
-        v-if="query.labels.length > 1"
+        v-if="query.labelIds.length > 1"
         class="mt-1 flex items-center gap-2 px-2 text-xs text-fg-muted"
       >
         <input

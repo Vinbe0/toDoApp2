@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { LABELS } from "@/features/tasks/model/task";
+import { DEFAULT_LABELS } from "@/features/tasks/model/label";
 import type { NewTask } from "@/features/tasks/repositories";
 import TaskComposer from "../TaskComposer.vue";
 
 async function mountOpenComposer(result = true) {
   const save = vi.fn<(task: NewTask) => Promise<boolean>>(async () => result);
-  const wrapper = mount(TaskComposer, { props: { labels: LABELS, save }, attachTo: document.body });
+  const wrapper = mount(TaskComposer, {
+    props: { labels: DEFAULT_LABELS, save },
+    attachTo: document.body,
+  });
   await wrapper.get("button").trigger("click"); // "+ Add task"
   const title = () => wrapper.get<HTMLInputElement>('input[aria-label="Task title"]');
   return { wrapper, save, title };
@@ -19,7 +22,7 @@ describe("TaskComposer", () => {
   it("starts as a single Add task row and opens with the title focused", async () => {
     const save = vi.fn();
     const wrapper = mount(TaskComposer, {
-      props: { labels: LABELS, save },
+      props: { labels: DEFAULT_LABELS, save },
       attachTo: document.body,
     });
     expect(wrapper.find("form").exists()).toBe(false);
@@ -55,7 +58,7 @@ describe("TaskComposer", () => {
       description: "Before Friday",
       deadline: "2026-11-01",
       priority: "high",
-      labels: ["work"],
+      labelIds: ["work"],
     });
     expect(wrapper.find("form").exists()).toBe(true);
     expect(title().element.value).toBe("");
@@ -95,5 +98,62 @@ describe("TaskComposer", () => {
     await work().trigger("click");
     expect(work().attributes("aria-pressed")).toBe("false");
     wrapper.unmount();
+  });
+
+  describe("creating a label", () => {
+    async function mountWithCreate(created: { id: string; name: string } | null) {
+      const save = vi.fn<(task: NewTask) => Promise<boolean>>(async () => true);
+      const createLabel = vi.fn(async () =>
+        created ? { ...created, color: "red" as const } : null,
+      );
+      const wrapper = mount(TaskComposer, {
+        props: { labels: DEFAULT_LABELS, save, createLabel },
+        attachTo: document.body,
+      });
+      await wrapper.get("button").trigger("click");
+      await buttonByText(wrapper, "Label").trigger("click");
+      return {
+        wrapper,
+        save,
+        createLabel,
+        input: () => wrapper.get('input[aria-label="New label name"]'),
+      };
+    }
+
+    it("creates the label and selects it on the task", async () => {
+      const { wrapper, save, createLabel, input } = await mountWithCreate({
+        id: "gym",
+        name: "Gym",
+      });
+
+      await input().setValue("Gym");
+      await input().trigger("keydown", { key: "Enter" });
+      await flushPromises();
+      expect(createLabel).toHaveBeenCalledWith("Gym");
+      expect(wrapper.find('input[aria-label="New label name"]').exists()).toBe(false);
+
+      await wrapper.get('input[aria-label="Task title"]').setValue("Run");
+      await wrapper.get("form").trigger("submit");
+      await flushPromises();
+      expect(save).toHaveBeenCalledWith(expect.objectContaining({ labelIds: ["gym"] }));
+      wrapper.unmount();
+    });
+
+    it("keeps the field open when the name is rejected", async () => {
+      const { wrapper, input } = await mountWithCreate(null);
+      await input().setValue("work");
+      await input().trigger("keydown", { key: "Enter" });
+      await flushPromises();
+      expect(wrapper.find('input[aria-label="New label name"]').exists()).toBe(true);
+      wrapper.unmount();
+    });
+
+    it("Escape closes only the label field, not the task editor", async () => {
+      const { wrapper, input } = await mountWithCreate(null);
+      await input().trigger("keydown", { key: "Escape" });
+      expect(wrapper.find('input[aria-label="New label name"]').exists()).toBe(false);
+      expect(wrapper.find("form").exists()).toBe(true);
+      wrapper.unmount();
+    });
   });
 });

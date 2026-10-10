@@ -3,16 +3,19 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import type { AuthService } from "../application/AuthService.js";
+import type { LabelService } from "../application/LabelService.js";
 import type { TaskService } from "../application/TaskService.js";
 import { createAuthenticate } from "./middleware/authenticate.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { simulateLatency } from "./middleware/simulateLatency.js";
 import { createAuthRouter } from "./routes/auth.js";
+import { createLabelsRouter } from "./routes/labels.js";
 import { createTasksRouter } from "./routes/tasks.js";
 
 export type AppDependencies = {
   taskService: TaskService;
   authService: AuthService;
+  labelService: LabelService;
   /** Browser origins allowed by CORS. Omit to allow any origin (tests). */
   corsOrigins?: string[];
   /** Max auth requests per IP per 15 minutes. */
@@ -24,6 +27,7 @@ export type AppDependencies = {
 export function createApp({
   taskService,
   authService,
+  labelService,
   corsOrigins,
   authRateLimit = 20,
   simulateLatency: slow,
@@ -51,6 +55,7 @@ export function createApp({
   const authenticate = createAuthenticate(authService);
   app.use("/api/auth", createAuthRouter(authService, authenticate, authLimiter));
   app.use("/api/tasks", createTasksRouter(taskService, authenticate));
+  app.use("/api/labels", createLabelsRouter(labelService, authenticate));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

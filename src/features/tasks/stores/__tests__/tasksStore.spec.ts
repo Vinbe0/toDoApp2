@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
-import type { Task } from "@/features/tasks/model/types";
+import type { Label, Task } from "@/features/tasks/model/types";
 import {
+  type ApiLabelRepository,
   type ApiTaskRepository,
+  LocalLabelRepository,
   LocalTaskRepository,
   type NewTask,
+  labelRepositories,
   taskRepositories,
 } from "@/features/tasks/repositories";
 import { useAuthStore } from "@/features/auth/stores/authStore";
@@ -15,7 +18,13 @@ import type { StorageItem } from "@/shared/lib/storage";
 import { UNDO_TIMEOUT_MS, useTasksStore } from "../tasksStore";
 
 vi.mock("@/shared/lib/notify", () => ({
-  notify: { info: vi.fn(), success: vi.fn(), error: vi.fn(), withAction: vi.fn() },
+  notify: {
+    info: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    fromError: vi.fn(),
+    withAction: vi.fn(),
+  },
 }));
 
 vi.mock("@/features/auth/api/authApi", () => ({
@@ -25,8 +34,8 @@ vi.mock("@/features/auth/api/authApi", () => ({
   },
 }));
 
-function memoryStorage(): StorageItem<Task[]> {
-  let value: Task[] | null = null;
+function memoryStorage<T>(initial: T | null = null): StorageItem<T> {
+  let value: T | null = initial;
   return {
     get: () => (value ? structuredClone(value) : null),
     set: (next) => (value = structuredClone(next)),
@@ -39,7 +48,7 @@ const newTask = (text: string, overrides: Partial<NewTask> = {}): NewTask => ({
   description: "",
   deadline: null,
   priority: "medium",
-  labels: [],
+  labelIds: [],
   ...overrides,
 });
 
@@ -47,6 +56,8 @@ const texts = (list: Task[]) => list.map((task) => task.text);
 
 let local: LocalTaskRepository;
 let api: LocalTaskRepository; // an in-memory stand-in for the server
+let localLabels: LocalLabelRepository;
+let apiLabels: LocalLabelRepository;
 
 async function setup(guestTasks: string[] = []) {
   for (const text of guestTasks) await local.create(newTask(text));
@@ -61,10 +72,16 @@ beforeEach(() => {
   setActivePinia(createPinia());
 
   let id = 0;
-  local = new LocalTaskRepository(memoryStorage(), () => `local-${++id}`);
-  api = new LocalTaskRepository(memoryStorage(), () => `api-${++id}`);
+  local = new LocalTaskRepository(memoryStorage<Task[]>(), () => `local-${++id}`);
+  api = new LocalTaskRepository(memoryStorage<Task[]>(), () => `api-${++id}`);
   taskRepositories.local = local;
   taskRepositories.api = api as unknown as ApiTaskRepository;
+
+  // Both start with the default labels (guest ids "work", …; the "server" gets new ids).
+  localLabels = new LocalLabelRepository(memoryStorage<Label[]>());
+  apiLabels = new LocalLabelRepository(memoryStorage<Label[]>(), () => `api-label-${++id}`);
+  labelRepositories.local = localLabels;
+  labelRepositories.api = apiLabels as unknown as ApiLabelRepository;
 });
 
 afterEach(() => {
@@ -82,7 +99,10 @@ describe("tasks store", () => {
     vi.spyOn(local, "list").mockRejectedValueOnce(new Error("Disk on fire"));
     const store = await setup();
     expect(store.status).toBe("error");
-    expect(notify.error).toHaveBeenCalledWith("Disk on fire");
+    expect(notify.fromError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Disk on fire" }),
+      "Could not load your tasks",
+    );
   });
 
   it("adds a trimmed task and ignores blank titles", async () => {
@@ -107,7 +127,10 @@ describe("tasks store", () => {
 
     await store.toggle("local-1");
     expect(store.tasks[0]?.completed).toBe(false);
-    expect(notify.error).toHaveBeenCalledWith("Offline");
+    expect(notify.fromError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Offline" }),
+      "Could not update the task",
+    );
   });
 
   it("renames a task but ignores empty names", async () => {
@@ -200,6 +223,31 @@ describe("tasks store", () => {
       expect(await local.list()).toEqual([]);
     });
 
+    it("maps guest labels to the account's labels by name, creating missing ones", async () => {
+      // The account has its own label ids; the guest also made "Gym".
+      apiLabels = new LocalLabelRepository(
+        memoryStorage<Label[]>([{ id: "srv-work", name: "Work", color: "sky" }]),
+        () => "srv-new",
+      );
+      labelRepositories.api = apiLabels as unknown as ApiLabelRepository;
+      const gym = await localLabels.create({ name: "Gym", color: "red" });
+      await local.create(newTask("Report", { labelIds: ["work"] }));
+      await local.create(newTask("Run", { labelIds: [gym.id, "work"] }));
+      const store = await setup();
+
+      await store.importGuestTasks(() => true);
+
+      expect(await apiLabels.list()).toEqual([
+        { id: "srv-work", name: "Work", color: "sky" },
+        { id: "srv-new", name: "Gym", color: "red" },
+      ]);
+      const imported = await api.list();
+      expect(imported.map((t) => [t.text, t.labelIds])).toEqual([
+        ["Report", ["srv-work"]],
+        ["Run", ["srv-new", "srv-work"]],
+      ]);
+    });
+
     it("keeps completed guest tasks completed after import", async () => {
       const store = await setup(["Done"]);
       await store.toggle("local-1");
@@ -214,12 +262,13 @@ describe("tasks store", () => {
       expect(await local.list()).toHaveLength(1);
     });
 
-    it("explains an expired session", async () => {
+    it("reports failed requests, including an expired session", async () => {
       const store = await setup(["A"]);
-      vi.spyOn(local, "update").mockRejectedValueOnce(new HttpError("Unauthorized", 401));
+      const expired = new HttpError("Unauthorized", 401);
+      vi.spyOn(local, "update").mockRejectedValueOnce(expired);
 
       await store.toggle("local-1");
-      expect(notify.error).toHaveBeenCalledWith("Your session has expired. Please log in again.");
+      expect(notify.fromError).toHaveBeenCalledWith(expired, "Could not update the task");
     });
   });
 });

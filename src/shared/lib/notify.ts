@@ -1,5 +1,6 @@
 import { h } from "vue";
 import { useToast } from "vue-toastification";
+import { HttpError, getErrorMessage } from "@/shared/api";
 
 /**
  * App-wide notifications. Stores call this instead of a toast library
@@ -9,6 +10,16 @@ export const notify = {
   info: (message: string) => useToast().info(message),
   success: (message: string) => useToast().success(message),
   error: (message: string) => useToast().error(message),
+
+  /** Shows a failed request's message, or `fallback` if it has none. */
+  fromError(error: unknown, fallback: string) {
+    // A 401 has already logged the user out (see main.ts); explain why.
+    if (error instanceof HttpError && error.isUnauthorized) {
+      useToast().error("Your session has expired. Please log in again.");
+    } else {
+      useToast().error(getErrorMessage(error, fallback));
+    }
+  },
 
   /** A message with a single action button, e.g. "Undo". */
   withAction(message: string, actionLabel: string, onAction: () => void, timeout = 5000) {

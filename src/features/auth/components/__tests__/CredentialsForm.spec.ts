@@ -11,7 +11,13 @@ vi.mock("@/features/auth/api/authApi", () => ({
   authApi: { login: vi.fn(), register: vi.fn() },
 }));
 vi.mock("@/shared/lib/notify", () => ({
-  notify: { info: vi.fn(), success: vi.fn(), error: vi.fn(), withAction: vi.fn() },
+  notify: {
+    info: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    fromError: vi.fn(),
+    withAction: vi.fn(),
+  },
 }));
 
 const Stub = defineComponent({ template: "<div />" });

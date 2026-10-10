@@ -3,14 +3,21 @@ import { computed, nextTick, ref } from "vue";
 import {
   describeDue,
   dueToneClass,
-  labelHashColor,
-  labelName,
+  labelTextColor,
   priorityCheckbox,
   priorityLabel,
 } from "@/features/tasks/components/taskDisplay";
-import type { Task } from "@/features/tasks/model/types";
+import type { Label, Task } from "@/features/tasks/model/types";
 
-const props = defineProps<{ task: Task; draggable: boolean }>();
+const props = withDefaults(
+  defineProps<{
+    task: Task;
+    draggable: boolean;
+    /** The task's labels, resolved from its label ids. */
+    labels?: Label[];
+  }>(),
+  { labels: () => [] },
+);
 const emit = defineEmits<{
   toggle: [];
   remove: [];
@@ -96,15 +103,15 @@ function cancelEdit() {
       </p>
 
       <div
-        v-if="due || task.labels.length"
+        v-if="due || labels.length"
         class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
       >
         <span v-if="due" class="inline-flex items-center gap-1" :class="dueToneClass[due.tone]">
           <i class="pi pi-calendar text-[10px]" aria-hidden="true" />
           <span v-if="due.tone === 'overdue'" class="sr-only">Overdue:</span>{{ due.text }}
         </span>
-        <span v-for="label in task.labels" :key="label" class="text-fg-muted"
-          ><span :class="labelHashColor[label]">#</span>{{ labelName(label) }}</span
+        <span v-for="label in labels" :key="label.id" class="text-fg-muted"
+          ><span :class="labelTextColor[label.color]">#</span>{{ label.name }}</span
         >
       </div>
       <span class="sr-only">{{ priorityLabel(task.priority) }} priority</span>

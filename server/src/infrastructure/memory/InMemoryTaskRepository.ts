@@ -47,6 +47,12 @@ export class InMemoryTaskRepository implements TaskRepository {
     });
   }
 
+  async removeLabelFromTasks(labelId: string): Promise<void> {
+    for (const task of this.tasks.values()) {
+      task.labelIds = task.labelIds.filter((id) => id !== labelId);
+    }
+  }
+
   async deleteTask(id: string): Promise<boolean> {
     const existed = this.tasks.delete(id);
     for (const taskIds of this.userTaskIndex.values()) {

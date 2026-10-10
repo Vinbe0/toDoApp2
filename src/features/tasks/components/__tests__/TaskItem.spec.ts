@@ -10,12 +10,16 @@ const baseTask: Task = {
   completed: false,
   deadline: null,
   priority: "high",
-  labels: ["work"],
+  labelIds: ["work"],
 };
 
 const mountItem = (task: Partial<Task> = {}) =>
   mount(TaskItem, {
-    props: { task: { ...baseTask, ...task }, draggable: true },
+    props: {
+      task: { ...baseTask, ...task },
+      draggable: true,
+      labels: [{ id: "work", name: "Work", color: "sky" }],
+    },
     attachTo: document.body,
   });
 

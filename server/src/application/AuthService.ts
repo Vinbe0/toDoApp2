@@ -19,6 +19,8 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
+    /** Runs after a new account is created, e.g. to give it default labels. */
+    private readonly onUserRegistered: (userId: string) => Promise<unknown> = async () => {},
   ) {}
 
   async register(input: Credentials): Promise<AuthResult> {
@@ -40,6 +42,7 @@ export class AuthService {
       passwordHash: await this.passwordHasher.hash(input.password),
     });
 
+    await this.onUserRegistered(user.id);
     return this.issueToken(user.id, user.email.address);
   }
 

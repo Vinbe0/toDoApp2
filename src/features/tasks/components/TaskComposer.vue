@@ -14,6 +14,8 @@ const props = defineProps<{
   labels: readonly Label[];
   /** Saves the task; the form resets only when this resolves to true. */
   save: (task: NewTask) => Promise<boolean>;
+  /** Creates a label from the editor; omit to hide the "+ Label" chip. */
+  createLabel?: (name: string) => Promise<Label | null>;
 }>();
 
 const createDraft = (): NewTask => ({
@@ -21,7 +23,7 @@ const createDraft = (): NewTask => ({
   description: "",
   deadline: null,
   priority: "medium",
-  labels: [],
+  labelIds: [],
 });
 
 const open = ref(false);
@@ -43,11 +45,36 @@ const priorityDot: Record<Priority, string> = {
   low: "text-sky-500",
 };
 
-const toggleLabel = (label: Label) => {
-  const labels = draft.value.labels;
-  draft.value.labels = labels.includes(label)
-    ? labels.filter((item) => item !== label)
-    : [...labels, label];
+// "+ Label": a small inline field. It is a plain input (forms can't be nested),
+// so Enter and Escape are handled here and don't submit or close the editor.
+const addingLabel = ref(false);
+const newLabelName = ref("");
+const newLabelInput = ref<HTMLInputElement | null>(null);
+
+async function startAddingLabel() {
+  addingLabel.value = true;
+  await nextTick();
+  newLabelInput.value?.focus();
+}
+
+function stopAddingLabel() {
+  addingLabel.value = false;
+  newLabelName.value = "";
+}
+
+async function confirmNewLabel() {
+  if (!newLabelName.value.trim() || !props.createLabel) return stopAddingLabel();
+  const label = await props.createLabel(newLabelName.value);
+  if (!label) return; // invalid or duplicate: keep the field open to fix it
+  draft.value.labelIds = [...draft.value.labelIds, label.id];
+  stopAddingLabel();
+}
+
+const toggleLabel = (labelId: string) => {
+  const ids = draft.value.labelIds;
+  draft.value.labelIds = ids.includes(labelId)
+    ? ids.filter((id) => id !== labelId)
+    : [...ids, labelId];
 };
 
 /** Opens the editor and moves the cursor into the title (also used by the sidebar). */
@@ -69,7 +96,7 @@ async function submit() {
   if (!draft.value.text.trim() || saving.value) return;
   saving.value = true;
   try {
-    if (await props.save({ ...draft.value, labels: [...draft.value.labels] })) {
+    if (await props.save({ ...draft.value, labelIds: [...draft.value.labelIds] })) {
       // Stay open so several tasks can be added in a row.
       draft.value = createDraft();
       await nextTick();
@@ -147,11 +174,32 @@ async function submit() {
 
       <LabelChip
         v-for="label in props.labels"
-        :key="label"
+        :key="label.id"
         :label="label"
-        :selected="draft.labels.includes(label)"
-        @toggle="toggleLabel(label)"
+        :selected="draft.labelIds.includes(label.id)"
+        @toggle="toggleLabel(label.id)"
       />
+      <template v-if="createLabel">
+        <input
+          v-if="addingLabel"
+          ref="newLabelInput"
+          v-model="newLabelName"
+          aria-label="New label name"
+          placeholder="New label"
+          maxlength="30"
+          class="h-7 w-28 rounded-md border border-brand-500 bg-surface px-2 text-xs text-fg focus:outline-none"
+          @keydown.enter.prevent="confirmNewLabel"
+          @keydown.esc.stop.prevent="stopAddingLabel"
+        />
+        <button
+          v-else
+          type="button"
+          class="inline-flex h-7 items-center gap-1 rounded-md border border-dashed border-border px-2 text-xs text-fg-muted hover:bg-surface-muted hover:text-fg"
+          @click="startAddingLabel"
+        >
+          <i class="pi pi-plus text-[9px]" aria-hidden="true" /> Label
+        </button>
+      </template>
     </div>
 
     <div class="mt-3 flex justify-end gap-2 border-t border-border pt-3">

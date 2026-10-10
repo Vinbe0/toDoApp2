@@ -1,7 +1,6 @@
 import { computed, ref, watch } from "vue";
 import { defineStore, storeToRefs } from "pinia";
 import type { Task } from "@/features/tasks/model/types";
-import { LABELS } from "@/features/tasks/model/task";
 import {
   applyReorder,
   countOpenByLabel,
@@ -10,9 +9,10 @@ import {
   queryTasks,
   type TaskQuery,
 } from "@/features/tasks/model/query";
-import { taskRepositories, type NewTask } from "@/features/tasks/repositories";
+import { labelNameKey } from "@/features/tasks/model/label";
+import { labelRepositories, taskRepositories, type NewTask } from "@/features/tasks/repositories";
+import { useLabelsStore } from "@/features/tasks/stores/labelsStore";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { HttpError, getErrorMessage } from "@/shared/api";
 import { notify } from "@/shared/lib/notify";
 
 export const UNDO_TIMEOUT_MS = 5000;
@@ -34,17 +34,11 @@ export const useTasksStore = defineStore("tasks", () => {
 
   const visibleTasks = computed(() => queryTasks(tasks.value, query.value));
   const counts = computed(() => countTasks(tasks.value));
-  const labelCounts = computed(() => countOpenByLabel(tasks.value, LABELS));
+  const labelsStore = useLabelsStore();
+  const labelCounts = computed(() => countOpenByLabel(tasks.value, labelsStore.labels));
   const canReorder = computed(() => query.value.sort === "manual");
 
-  function reportError(error: unknown, fallback: string) {
-    // A 401 has already logged the user out (see main.ts); explain why.
-    if (error instanceof HttpError && error.isUnauthorized) {
-      notify.error("Your session has expired. Please log in again.");
-    } else {
-      notify.error(getErrorMessage(error, fallback));
-    }
-  }
+  const reportError = (error: unknown, fallback: string) => notify.fromError(error, fallback);
 
   /** Applies a change locally right away and rolls it back if the request fails. */
   async function optimistic(
@@ -170,15 +164,51 @@ export const useTasksStore = defineStore("tasks", () => {
     );
   }
 
-  /** Copies guest tasks into the account after login/sign-up. Returns how many were imported. */
+  /** A label was deleted: take it off every task and out of the current filter. */
+  function forgetLabel(labelId: string) {
+    for (const task of tasks.value) {
+      task.labelIds = task.labelIds.filter((id) => id !== labelId);
+    }
+    if (query.value.labelIds.includes(labelId)) {
+      setQuery({ labelIds: query.value.labelIds.filter((id) => id !== labelId) });
+    }
+  }
+
+  /**
+   * Copies guest tasks into the account after login/sign-up. Guest labels are
+   * matched to the account's labels by name (created if missing). Returns how
+   * many tasks were imported.
+   */
   async function importGuestTasks(confirm: (count: number) => boolean) {
     const guestTasks = await taskRepositories.local.list();
     if (!guestTasks.length || !confirm(guestTasks.length)) return 0;
 
+    const guestLabels = await labelRepositories.local.list();
+    const accountLabels = await labelRepositories.api.list();
+    const accountIdFor = new Map<string, string>();
+
+    for (const guestId of new Set(guestTasks.flatMap((task) => task.labelIds))) {
+      const guestLabel = guestLabels.find((label) => label.id === guestId);
+      if (!guestLabel) continue;
+      let match = accountLabels.find(
+        (label) => labelNameKey(label.name) === labelNameKey(guestLabel.name),
+      );
+      if (!match) {
+        match = await labelRepositories.api.create({
+          name: guestLabel.name,
+          color: guestLabel.color,
+        });
+        accountLabels.push(match);
+      }
+      accountIdFor.set(guestId, match.id);
+    }
+
     for (const task of guestTasks) {
-      await taskRepositories.api.create(task);
+      const labelIds = task.labelIds.flatMap((id) => accountIdFor.get(id) ?? []);
+      await taskRepositories.api.create({ ...task, labelIds });
     }
     taskRepositories.local.clear();
+    await labelsStore.load();
     return guestTasks.length;
   }
 
@@ -205,6 +235,7 @@ export const useTasksStore = defineStore("tasks", () => {
     remove,
     reorder,
     clearCompleted,
+    forgetLabel,
     importGuestTasks,
     setQuery,
     resetQuery,

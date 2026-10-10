@@ -10,7 +10,7 @@ describe("task mappers", () => {
       deadline: null,
       priority: "low",
       completed: false,
-      labels: [],
+      labelIds: [],
     });
   });
 
@@ -20,7 +20,7 @@ describe("task mappers", () => {
       description: "",
       dueDate: "2026-10-12",
       priority: "high",
-      labels: [],
+      labelIds: [],
     });
   });
 
@@ -29,13 +29,15 @@ describe("task mappers", () => {
     expect(toApiCreateTask({ text: "New" })).not.toHaveProperty("completed");
   });
 
-  it("maps labels in both directions", () => {
-    expect(toUiTask({ id: "1", title: "x", labels: ["work", "shopping"] }).labels).toEqual([
+  it("maps label ids in both directions", () => {
+    expect(toUiTask({ id: "1", title: "x", labelIds: ["work", "shopping"] }).labelIds).toEqual([
       "work",
       "shopping",
     ]);
-    expect(toApiCreateTask({ text: "x", labels: ["university"] }).labels).toEqual(["university"]);
-    expect(toApiUpdateTask({ labels: [] })).toEqual({ labels: [] });
+    expect(toApiCreateTask({ text: "x", labelIds: ["university"] }).labelIds).toEqual([
+      "university",
+    ]);
+    expect(toApiUpdateTask({ labelIds: [] })).toEqual({ labelIds: [] });
   });
 
   it("only includes changed fields in the update payload", () => {

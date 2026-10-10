@@ -95,6 +95,91 @@ describe("HTTP API", () => {
     });
   });
 
+  describe("labels", () => {
+    it("gives new accounts the default labels", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+
+      const res = await api.get("/api/labels").set(auth);
+      expect(res.status).toBe(200);
+      expect(res.body.map((l: { name: string }) => l.name)).toEqual([
+        "Work",
+        "Shopping",
+        "University",
+      ]);
+      expect(res.body[0]).toEqual({ id: expect.any(String), name: "Work", color: "sky" });
+    });
+
+    it("creates, renames, recolours and deletes labels", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+
+      const created = await api.post("/api/labels").set(auth).send({ name: "  Gym " });
+      expect(created.status).toBe(201);
+      expect(created.body.name).toBe("Gym");
+
+      const renamed = await api
+        .put(`/api/labels/${created.body.id}`)
+        .set(auth)
+        .send({ name: "Fitness", color: "red" });
+      expect(renamed.body).toMatchObject({ name: "Fitness", color: "red" });
+
+      expect((await api.delete(`/api/labels/${created.body.id}`).set(auth)).status).toBe(204);
+      const names = (await api.get("/api/labels").set(auth)).body.map(
+        (l: { name: string }) => l.name,
+      );
+      expect(names).not.toContain("Fitness");
+    });
+
+    it("rejects duplicates, bad colours and empty updates", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+
+      const duplicate = await api.post("/api/labels").set(auth).send({ name: "work" });
+      expect(duplicate.status).toBe(409);
+      expect(duplicate.body.message).toBe('A label named "Work" already exists');
+
+      expect(
+        (await api.post("/api/labels").set(auth).send({ name: "x", color: "gold" })).status,
+      ).toBe(400);
+      expect((await api.post("/api/labels").set(auth).send({ name: "" })).status).toBe(400);
+    });
+
+    it("filters tasks by label and drops deleted labels from tasks", async () => {
+      const { api, signUp } = createTestApp();
+      const { auth } = await signUp();
+      const { body: gym } = await api.post("/api/labels").set(auth).send({ name: "Gym" });
+      await api
+        .post("/api/tasks")
+        .set(auth)
+        .send({ title: "Run", labelIds: [gym.id] });
+      await api.post("/api/tasks").set(auth).send({ title: "Read" });
+
+      const filtered = await api.get(`/api/tasks?labelId=${gym.id}`).set(auth);
+      expect(filtered.body.map((t: { title: string }) => t.title)).toEqual(["Run"]);
+
+      await api.delete(`/api/labels/${gym.id}`).set(auth);
+      const { body: tasks } = await api.get("/api/tasks").set(auth);
+      expect(tasks.find((t: { title: string }) => t.title === "Run").labelIds).toEqual([]);
+    });
+
+    it("keeps labels private to their owner", async () => {
+      const { api, signUp } = createTestApp();
+      const alice = await signUp();
+      const bob = await signUp();
+      const { body: label } = await api
+        .post("/api/labels")
+        .set(alice.auth)
+        .send({ name: "Secret" });
+
+      expect(
+        (await api.put(`/api/labels/${label.id}`).set(bob.auth).send({ name: "x" })).status,
+      ).toBe(404);
+      expect((await api.delete(`/api/labels/${label.id}`).set(bob.auth)).status).toBe(404);
+      expect((await api.get("/api/labels")).status).toBe(401);
+    });
+  });
+
   describe("validation", () => {
     it("rejects invalid fields with 400 and per-field details", async () => {
       const { api, signUp } = createTestApp();
@@ -146,18 +231,27 @@ describe("HTTP API", () => {
       expect(res.body.user.email).toBe("me@example.com");
     });
 
-    it("validates the label filter", async () => {
+    it("validates label ids on tasks and in the filter", async () => {
       const { api, signUp } = createTestApp();
       const { auth } = await signUp();
-      expect((await api.get("/api/tasks?label=gym").set(auth)).status).toBe(400);
+      const unknownId = crypto.randomUUID();
+
+      expect((await api.get("/api/tasks?labelId=gym").set(auth)).status).toBe(400);
+      expect((await api.get(`/api/tasks?labelId=${unknownId}`).set(auth)).status).toBe(400);
       expect(
         (
           await api
             .post("/api/tasks")
             .set(auth)
-            .send({ title: "x", labels: ["gym"] })
+            .send({ title: "x", labelIds: ["gym"] })
         ).status,
       ).toBe(400);
+      const unknown = await api
+        .post("/api/tasks")
+        .set(auth)
+        .send({ title: "x", labelIds: [unknownId] });
+      expect(unknown.status).toBe(400);
+      expect(unknown.body.message).toBe(`Unknown label "${unknownId}"`);
     });
   });
 
@@ -172,15 +266,23 @@ describe("HTTP API", () => {
       const { api, signUp } = createTestApp();
       const { auth } = await signUp();
 
+      const { body: labels } = await api.get("/api/labels").set(auth);
+      const workId = labels[0].id as string;
+
       const created = await api
         .post("/api/tasks")
         .set(auth)
-        .send({ title: "Write tests", priority: "high", dueDate: "2026-11-01", labels: ["work"] });
+        .send({
+          title: "Write tests",
+          priority: "high",
+          dueDate: "2026-11-01",
+          labelIds: [workId],
+        });
       expect(created.status).toBe(201);
       expect(created.body).toMatchObject({
         title: "Write tests",
         priority: "high",
-        labels: ["work"],
+        labelIds: [workId],
       });
       const id = created.body.id as string;
 

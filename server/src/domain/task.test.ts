@@ -9,7 +9,7 @@ describe("Task", () => {
       description: "",
       dueDate: null,
       priority: "low",
-      labels: [],
+      labelIds: [],
       completed: false,
     });
   });
@@ -18,14 +18,13 @@ describe("Task", () => {
     [{ title: "  " }, "title cannot be empty"],
     [{ dueDate: "not a date" }, "Invalid due date"],
     [{ priority: "urgent" }, "Invalid priority"],
-    [{ labels: ["work", "gym"] }, "Invalid label"],
     [{ position: -1 }, "Position must be a non-negative integer"],
   ])("rejects %j", (overrides, message) => {
     expect(() => new Task({ ...valid, ...(overrides as object) })).toThrow(message);
   });
 
   it("removes duplicate labels", () => {
-    expect(new Task({ ...valid, labels: ["work", "shopping", "work"] }).labels).toEqual([
+    expect(new Task({ ...valid, labelIds: ["work", "shopping", "work"] }).labelIds).toEqual([
       "work",
       "shopping",
     ]);
