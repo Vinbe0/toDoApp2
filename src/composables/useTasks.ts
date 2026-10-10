@@ -197,7 +197,7 @@ export function useTasks() {
 
       tasks.value = tasks.value.map((task) => {
         if (filteredIds.includes(task.id)) {
-          return newOrder[index++];
+          return newOrder[index++] ?? task;
         }
         return task;
       });
@@ -248,7 +248,7 @@ export function useTasks() {
       try {
         await tasksApi.deleteTask(taskId);
       } catch (error) {
-        tasks.value.splice(index, 0, removed);
+        if (removed) tasks.value.splice(index, 0, removed);
         handleError(error, "Could not delete the task");
       }
     } else {

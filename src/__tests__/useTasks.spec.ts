@@ -119,7 +119,7 @@ describe("useTasks (guest mode)", () => {
     expect(stored()).toHaveLength(1);
     expect(draftTask.value.text).toBe("");
 
-    const id = tasks.value[0].id;
+    const id = tasks.value[0]!.id;
     await completeTask(id);
     expect(stored()[0].completed).toBe(true);
 

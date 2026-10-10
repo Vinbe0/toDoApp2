@@ -12,7 +12,7 @@ export const priorityTone = (priority: Priority) =>
 export const priorityLabel = (priority: Priority) =>
   priorityOptions.find((option) => option.value === priority)?.label ?? priority;
 
-export const labelName = (label: Label) => label[0].toUpperCase() + label.slice(1);
+export const labelName = (label: Label) => label.charAt(0).toUpperCase() + label.slice(1);
 
 const todayIso = () => {
   const now = new Date();

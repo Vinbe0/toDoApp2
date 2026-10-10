@@ -8,6 +8,14 @@ import LogInView from '@/views/LogInView.vue'
 import AccountView from '@/views/AccountView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 
+declare module 'vue-router' {
+    interface RouteMeta {
+        showNavbar?: boolean
+        requiresAuth?: boolean
+        guestOnly?: boolean
+    }
+}
+
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [

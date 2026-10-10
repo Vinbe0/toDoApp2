@@ -44,8 +44,8 @@ import BaseInput from "@/components/ui/BaseInput.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import { RouterLink } from "vue-router";
 import {ref} from "vue";
-import { useAuth } from "@/composables/useAuth.ts";
-import { useTasks } from "@/composables/useTasks.ts"
+import { useAuth } from "@/composables/useAuth";
+import { useTasks } from "@/composables/useTasks"
 import { useRouter } from "vue-router";
 
 const router = useRouter();

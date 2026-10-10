@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useAttrs, useId } from "vue";
+import { computed, useAttrs, useId, type HTMLAttributes } from "vue";
 
 defineOptions({ inheritAttrs: false });
 
@@ -15,6 +15,9 @@ const id = useId();
 
 // `class` and `style` style the wrapper; every other attribute goes to the control.
 const attrs = useAttrs();
+const wrapperAttrs = computed(
+  () => ({ class: attrs.class, style: attrs.style }) as HTMLAttributes,
+);
 const controlAttrs = computed(() => {
   const { class: _class, style: _style, ...rest } = attrs;
   return rest;
@@ -25,7 +28,7 @@ const controlClass =
 </script>
 
 <template>
-  <div class="grid gap-1.5" :class="attrs.class" :style="attrs.style">
+  <div class="grid gap-1.5" v-bind="wrapperAttrs">
     <label v-if="label" :for="id" class="text-sm font-medium text-fg">{{ label }}</label>
     <div class="relative">
       <textarea

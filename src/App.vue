@@ -9,7 +9,7 @@
   <RouterView v-else />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import Navbar from "@/components/Navbar.vue";
 import AppFooter from "@/components/AppFooter.vue";
 import { RouterView, useRoute } from "vue-router";

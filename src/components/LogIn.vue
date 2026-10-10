@@ -43,9 +43,9 @@ import BaseInput from "@/components/ui/BaseInput.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import { RouterLink } from "vue-router";
 import { ref } from "vue";
-import { useAuth } from "@/composables/useAuth.ts";
+import { useAuth } from "@/composables/useAuth";
 import { useRouter } from "vue-router";
-import { useTasks } from "@/composables/useTasks.ts"
+import { useTasks } from "@/composables/useTasks"
 
 const router = useRouter();
 const email = ref<string>('');
