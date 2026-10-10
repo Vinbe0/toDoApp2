@@ -1,11 +1,11 @@
-<script setup>
-    import Hero from '@/components/Hero.vue';
-    import HomeCards from '@/components/HomeCards.vue';
-    import NewsListings from '@/components/NewsListings.vue';
+<script setup lang="ts">
+import Hero from "@/components/home/Hero.vue";
+import FeatureGrid from "@/components/home/FeatureGrid.vue";
+import TipsSection from "@/components/home/TipsSection.vue";
 </script>
 
 <template>
-    <Hero />
-    <HomeCards />
-    <NewsListings :limit="3" />
+  <Hero />
+  <FeatureGrid />
+  <TipsSection :limit="3" />
 </template>

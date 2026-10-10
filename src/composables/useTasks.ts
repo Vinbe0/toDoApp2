@@ -19,13 +19,6 @@ const priorityWeight: Record<Priority, number> = {
   low: 3,
 };
 
-export const priorityStyles: Record<Priority, string> = {
-  high: "bg-red-400/20 border rounded-2xl border-red-500 text-red-600 px-2",
-  medium:
-    "bg-yellow-400/20 border rounded-2xl border-yellow-500 text-yellow-600 px-2",
-  low: "bg-green-400/20 border rounded-2xl border-green-500 text-green-600 px-2",
-};
-
 type DraftTask = Pick<
   Task,
   "text" | "description" | "deadline" | "priority" | "labels"

@@ -1,35 +1,23 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center gap-2">
-    <h2 class="font-bold text-white text-7xl">TODOS</h2>
-    <div
-      class="bg-white py-2 px-3 rounded-xl min-h-36 max-w-sm w-full gap-2 flex flex-col items-center"
-    >
-    <img class="h-20 w-auto" :src="logo" alt="TODOS logo" />
-      <p class="font-bold text-black text-xl">WELCOME TO OUR PLATFORM!</p>
-      <RouterLink
-        to="/login"
-        class="bg-green-600 rounded-2xl px-1.5 font-bold text-white w-full h-10 text-center text-xl pt-1.5 hover:bg-green-700"
-      >
-        Log In
-      </RouterLink>
-      <div class="flex gap-2 w-full">
-        <RouterLink to="/register" class="bg-green-600 rounded-2xl px-1.5 font-bold text-white text-center pt-1.5 flex-1 h-10 text-xl hover:bg-green-700">
-            Register
-        </RouterLink>
-        <button
-          @click="continueAsGuest"
-          class="bg-gray-600 rounded-2xl px-1.5 font-bold text-white text-center pt-1.5 flex-1 h-10 text-xl hover:bg-gray-700"
-        >
-            Guest
-        </button>
+  <AuthLayout title="Welcome to TODOS" subtitle="How would you like to get started?">
+    <div class="grid gap-3">
+      <BaseButton to="/login" size="lg" block>Log in</BaseButton>
+      <BaseButton to="/register" variant="secondary" size="lg" block>Create account</BaseButton>
+      <div class="my-2 flex items-center gap-3 text-xs text-fg-subtle">
+        <span class="h-px flex-1 bg-border" /> or <span class="h-px flex-1 bg-border" />
       </div>
+      <BaseButton variant="ghost" size="lg" block @click="continueAsGuest">
+        Continue as guest <i class="pi pi-arrow-right" aria-hidden="true" />
+      </BaseButton>
+      <p class="text-center text-xs text-fg-subtle">Guest tasks are stored only in this browser.</p>
     </div>
-  </div>
+  </AuthLayout>
 </template>
 
-<script setup>
-import logo from "@/assets/bp.png";
+<script setup lang="ts">
 import { useRouter } from "vue-router";
+import AuthLayout from "@/components/auth/AuthLayout.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
 import { enterGuestMode } from "@/composables/useAuth";
 
 const router = useRouter();
