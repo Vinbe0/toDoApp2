@@ -2,8 +2,6 @@ import { computed, h, onMounted, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import type { Label, Task } from "@/features/tasks/model/types";
 import { useAuth } from "@/features/auth/composables/useAuth";
-import { tasksApi } from "@/features/tasks/api/tasksApi";
-import { normalizeTaskList } from "@/features/tasks/model/task";
 import {
   applyReorder,
   countTasks,
@@ -11,23 +9,24 @@ import {
   queryTasks,
   type TaskQuery,
 } from "@/features/tasks/model/query";
-import { jsonItem } from "@/shared/lib/storage";
+import {
+  apiTaskRepository,
+  localTaskRepository,
+  type NewTask,
+  type TaskRepository,
+} from "@/features/tasks/repositories";
 import { HttpError, getErrorMessage } from "@/shared/api";
-
-const guestTasksStorage = jsonItem("guest-tasks", normalizeTaskList);
 
 const { isRegistered, logout } = useAuth();
 
 const UNDO_TIMEOUT_MS = 5000;
-
-type DraftTask = Pick<Task, "text" | "description" | "deadline" | "priority" | "labels">;
 
 type EditingState = {
   id: string | null;
   value: string;
 };
 
-const createDraftTask = (): DraftTask => ({
+const createDraftTask = (): NewTask => ({
   text: "",
   description: "",
   deadline: null,
@@ -40,8 +39,12 @@ export function useTasks() {
 
   const tasks = ref<Task[]>([]);
   const query = ref<TaskQuery>(createDefaultQuery());
-  const draftTask = ref<DraftTask>(createDraftTask());
+  const draftTask = ref<NewTask>(createDraftTask());
   const editing = ref<EditingState>({ id: null, value: "" });
+
+  const repository = computed<TaskRepository>(() =>
+    isRegistered.value ? apiTaskRepository : localTaskRepository,
+  );
 
   function handleError(error: unknown, fallback: string) {
     if (error instanceof HttpError && error.isUnauthorized) {
@@ -52,37 +55,41 @@ export function useTasks() {
     toast.error(getErrorMessage(error, fallback));
   }
 
-  function saveGuestTasks() {
-    guestTasksStorage.set(tasks.value);
-  }
-
-  async function importGuestTasks() {
-    const guestTasks = guestTasksStorage.get();
-    if (!guestTasks?.length) return;
-
-    const result = window.confirm("Do you want to import your tasks?");
-    if (result) {
-      for (const task of guestTasks) {
-        await tasksApi.createTask(task);
-      }
-      guestTasksStorage.remove();
+  /** Applies a change locally right away and rolls it back if the request fails. */
+  async function optimistic(
+    apply: () => void,
+    rollback: () => void,
+    request: () => Promise<unknown>,
+    errorMessage: string,
+  ) {
+    apply();
+    try {
+      await request();
+    } catch (error) {
+      rollback();
+      handleError(error, errorMessage);
     }
-  }
-
-  function loadGuestTasks() {
-    tasks.value = guestTasksStorage.get() ?? [];
   }
 
   async function reloadTasks() {
-    if (isRegistered.value) {
-      try {
-        tasks.value = await tasksApi.getTasks();
-      } catch (error) {
-        handleError(error, "Could not load your tasks");
-      }
-    } else {
-      loadGuestTasks();
+    try {
+      tasks.value = await repository.value.list();
+    } catch (error) {
+      handleError(error, "Could not load your tasks");
     }
+  }
+
+  async function importGuestTasks() {
+    const guestTasks = await localTaskRepository.list();
+    if (!guestTasks.length) return;
+    if (!window.confirm(`Import ${guestTasks.length} task(s) from guest mode into your account?`)) {
+      return;
+    }
+
+    for (const task of guestTasks) {
+      await apiTaskRepository.create(task);
+    }
+    localTaskRepository.clear();
   }
 
   const filteredTasks = computed(() => queryTasks(tasks.value, query.value));
@@ -92,129 +99,97 @@ export function useTasks() {
     get: () => filteredTasks.value,
     set(reordered: Task[]) {
       tasks.value = applyReorder(tasks.value, reordered);
-      if (!isRegistered.value) saveGuestTasks();
+      void repository.value.reorder(tasks.value.map((task) => task.id));
     },
   });
 
   onMounted(() => void reloadTasks());
-
-  watch(
-    () => isRegistered.value,
-    () => void reloadTasks(),
-  );
+  watch(isRegistered, () => void reloadTasks());
 
   const addNewTask = async () => {
-    if (draftTask.value.text.trim() === "") return;
+    const text = draftTask.value.text.trim();
+    if (!text) return;
 
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      text: draftTask.value.text,
-      description: draftTask.value.description,
-      completed: false,
-      deadline: draftTask.value.deadline,
-      priority: draftTask.value.priority,
-      labels: [...draftTask.value.labels],
-    };
-
-    if (isRegistered.value) {
-      try {
-        const created = await tasksApi.createTask(newTask);
-        tasks.value.push({ ...created, labels: newTask.labels });
-      } catch (error) {
-        handleError(error, "Could not create the task");
-        return;
-      }
-    } else {
-      tasks.value.push(newTask);
-      saveGuestTasks();
+    try {
+      const created = await repository.value.create({
+        ...draftTask.value,
+        text,
+        labels: [...draftTask.value.labels],
+      });
+      tasks.value.push(created);
+      draftTask.value = createDraftTask();
+    } catch (error) {
+      handleError(error, "Could not create the task");
     }
-    draftTask.value = createDraftTask();
   };
 
   const deleteTask = async (taskId: string) => {
     const index = tasks.value.findIndex((task) => task.id === taskId);
-    if (index === -1) return;
-    const [removed] = tasks.value.splice(index, 1);
-    if (isRegistered.value) {
-      try {
-        await tasksApi.deleteTask(taskId);
-      } catch (error) {
-        if (removed) tasks.value.splice(index, 0, removed);
-        handleError(error, "Could not delete the task");
-      }
-    } else {
-      saveGuestTasks();
-    }
+    const task = tasks.value[index];
+    if (!task) return;
+
+    await optimistic(
+      () => tasks.value.splice(index, 1),
+      () => tasks.value.splice(index, 0, task),
+      () => repository.value.remove(taskId),
+      "Could not delete the task",
+    );
   };
 
   const completeTask = async (taskId: string) => {
     const task = tasks.value.find((item) => item.id === taskId);
     if (!task) return;
-    task.completed = !task.completed;
-    if (isRegistered.value) {
-      try {
-        await tasksApi.updateTask(taskId, { completed: task.completed });
-      } catch (error) {
-        task.completed = !task.completed;
-        handleError(error, "Could not update the task");
-      }
-    } else {
-      saveGuestTasks();
-    }
+    const completed = !task.completed;
+
+    await optimistic(
+      () => (task.completed = completed),
+      () => (task.completed = !completed),
+      () => repository.value.update(taskId, { completed }),
+      "Could not update the task",
+    );
   };
 
   const startEdit = (task: Task) => {
     editing.value = { id: task.id, value: task.text };
   };
 
-  const saveEdit = async () => {
-    const id = editing.value.id;
-    if (id === null) return;
-
-    const task = tasks.value.find((item) => item.id === id);
-    if (!task) return;
-
-    const previousText = task.text;
-    task.text = editing.value.value.trim() || task.text;
-    editing.value = { id: null, value: "" };
-    if (task.text === previousText) return;
-
-    if (isRegistered.value) {
-      try {
-        await tasksApi.updateTask(id, { text: task.text });
-      } catch (error) {
-        task.text = previousText;
-        handleError(error, "Could not rename the task");
-      }
-    } else {
-      saveGuestTasks();
-    }
-  };
-
   const cancelEdit = () => {
     editing.value = { id: null, value: "" };
   };
 
-  const clearCompleted = async () => {
-    const completedTasks = tasks.value.filter((task) => task.completed);
+  const saveEdit = async () => {
+    const { id, value } = editing.value;
+    const task = tasks.value.find((item) => item.id === id);
+    cancelEdit();
+    if (!task) return;
 
+    const previousText = task.text;
+    const text = value.trim();
+    if (!text || text === previousText) return;
+
+    await optimistic(
+      () => (task.text = text),
+      () => (task.text = previousText),
+      () => repository.value.update(task.id, { text }),
+      "Could not rename the task",
+    );
+  };
+
+  const clearCompleted = () => {
+    const completedTasks = tasks.value.filter((task) => task.completed);
     if (!completedTasks.length) {
       toast.info("No completed tasks to clear");
       return;
     }
 
     const previousTasks = tasks.value.slice();
+    const repo = repository.value;
     tasks.value = tasks.value.filter((task) => !task.completed);
-    if (!isRegistered.value) saveGuestTasks();
 
-    // Registered users: delay the server-side delete so "Undo" can cancel it.
-    let undone = false;
+    // Delay the actual delete so "Undo" can cancel it.
     const commitDelete = async () => {
-      if (undone || !isRegistered.value) return;
-      const results = await Promise.allSettled(
-        completedTasks.map((task) => tasksApi.deleteTask(task.id)),
-      );
-      const failed = results.filter((r) => r.status === "rejected").length;
+      const results = await Promise.allSettled(completedTasks.map((task) => repo.remove(task.id)));
+      const failed = results.filter((result) => result.status === "rejected").length;
       if (failed) {
         toast.error(`Could not delete ${failed} task${failed === 1 ? "" : "s"}`);
         await reloadTasks();
@@ -222,24 +197,19 @@ export function useTasks() {
     };
     const deleteTimer = setTimeout(commitDelete, UNDO_TIMEOUT_MS);
 
+    const undo = () => {
+      clearTimeout(deleteTimer);
+      tasks.value = previousTasks;
+      toast.dismiss(toastId);
+    };
+
+    const count = completedTasks.length;
     const toastId = toast(
       h("div", { class: "flex items-center gap-3" }, [
-        h(
-          "span",
-          `Cleared ${completedTasks.length} completed task${completedTasks.length === 1 ? "" : "s"}`,
-        ),
+        h("span", `Cleared ${count} completed task${count === 1 ? "" : "s"}`),
         h(
           "button",
-          {
-            class: "bg-green-500 px-2 py-1 rounded text-white font-bold",
-            onClick: () => {
-              undone = true;
-              clearTimeout(deleteTimer);
-              tasks.value = previousTasks;
-              if (!isRegistered.value) saveGuestTasks();
-              toast.dismiss(toastId);
-            },
-          },
+          { class: "rounded bg-white/20 px-2 py-1 font-bold text-white", onClick: undo },
           "Undo",
         ),
       ]),
@@ -247,21 +217,15 @@ export function useTasks() {
     );
   };
 
-  const toggleArrayLabel = (target: Label[], label: Label) => {
-    const index = target.indexOf(label);
-    if (index === -1) {
-      target.push(label);
-      return;
-    }
-    target.splice(index, 1);
+  const resetQuery = () => {
+    query.value = { ...createDefaultQuery(), sort: query.value.sort };
   };
 
   const toggleDraftLabel = (label: Label) => {
-    toggleArrayLabel(draftTask.value.labels, label);
-  };
-
-  const resetQuery = () => {
-    query.value = { ...createDefaultQuery(), sort: query.value.sort };
+    const labels = draftTask.value.labels;
+    const index = labels.indexOf(label);
+    if (index === -1) labels.push(label);
+    else labels.splice(index, 1);
   };
 
   return {
