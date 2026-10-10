@@ -11,7 +11,7 @@ import TaskListSkeleton from "@/features/tasks/components/TaskListSkeleton.vue";
 import TaskSidebar from "@/features/tasks/components/TaskSidebar.vue";
 import ViewMenu from "@/features/tasks/components/ViewMenu.vue";
 import { labelName } from "@/features/tasks/components/taskDisplay";
-import { isQueryActive } from "@/features/tasks/model/query";
+import { groupByDue, isQueryActive } from "@/features/tasks/model/query";
 import { LABELS } from "@/features/tasks/model/task";
 import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 import { useAuthStore } from "@/features/auth/stores/authStore";
@@ -32,6 +32,11 @@ const sort = computed({
   get: () => query.value.sort,
   set: (value) => store.setQuery({ sort: value }),
 });
+
+/** Sorting by deadline shows date sections (Overdue, Today, …) instead of one list. */
+const dueGroups = computed(() =>
+  query.value.sort === "deadline" ? groupByDue(visibleTasks.value) : null,
+);
 
 const statusTitles = { all: "All tasks", active: "Active", completed: "Completed" } as const;
 
@@ -156,6 +161,29 @@ const addTask = () => {
             Reset filters
           </BaseButton>
         </EmptyState>
+
+        <template v-else-if="dueGroups">
+          <section v-for="group in dueGroups" :key="group.key" class="mt-4 first:mt-0">
+            <h2
+              class="border-b border-border pb-1.5 text-sm font-semibold"
+              :class="group.key === 'overdue' ? 'text-red-600 dark:text-red-400' : 'text-fg'"
+            >
+              {{ group.title }}
+              <span class="ml-1 font-normal text-fg-subtle">{{ group.tasks.length }}</span>
+            </h2>
+            <ul>
+              <TaskItem
+                v-for="task in group.tasks"
+                :key="task.id"
+                :task="task"
+                :draggable="false"
+                @toggle="store.toggle(task.id)"
+                @remove="store.remove(task.id)"
+                @rename="store.rename(task.id, $event)"
+              />
+            </ul>
+          </section>
+        </template>
 
         <VueDraggable
           v-else
