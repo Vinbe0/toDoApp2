@@ -32,7 +32,7 @@ flowchart LR
 
 | Layer             | Responsibility                                                                                                                              | Depends on                     |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `domain/`         | Entities and business rules (e.g. a task needs a title, labels must be valid), repository interfaces, domain errors                         | nothing                        |
+| `domain/`         | Entities and business rules (e.g. a task needs a title, label names are unique per user), repository interfaces, domain errors              | nothing                        |
 | `application/`    | Use cases: register, log in, list/create/update/delete/reorder tasks, ownership checks. Uses `PasswordHasher` and `TokenService` interfaces | domain                         |
 | `infrastructure/` | Drizzle repositories and schema, migrations, bcrypt, JWT, in-memory repositories for tests                                                  | domain, application interfaces |
 | `http/`           | Express app factory, Zod request schemas, authentication, mapping errors to status codes, response shapes                                   | application                    |
@@ -50,21 +50,27 @@ Domain errors (`ValidationError`, `NotFoundError`, …) carry no HTTP details; t
 
 ## API
 
-All task routes require `Authorization: Bearer <token>`.
+Task and label routes require `Authorization: Bearer <token>`.
 
-| Method | Endpoint                | Body                                                                | Response                   |
-| ------ | ----------------------- | ------------------------------------------------------------------- | -------------------------- |
-| POST   | `/api/auth/register`    | `{ email, password }` (password ≥ 8 chars)                          | `201 { token, user }`      |
-| POST   | `/api/auth/login`       | `{ email, password }`                                               | `200 { token, user }`      |
-| GET    | `/api/auth/me`          | —                                                                   | `200 { user }`             |
-| GET    | `/api/tasks?label=work` | —                                                                   | `200 Task[]` in list order |
-| POST   | `/api/tasks`            | `{ title, description?, dueDate?, priority?, labels?, completed? }` | `201 Task`                 |
-| PUT    | `/api/tasks/:id`        | any subset of the create fields                                     | `200 Task`                 |
-| PUT    | `/api/tasks/order`      | `{ ids: string[] }`                                                 | `200 Task[]`               |
-| DELETE | `/api/tasks/:id`        | —                                                                   | `204`                      |
-| GET    | `/health`               | —                                                                   | `200 { status: "ok" }`     |
+| Method | Endpoint               | Body                                                                  | Response                              |
+| ------ | ---------------------- | --------------------------------------------------------------------- | ------------------------------------- |
+| POST   | `/api/auth/register`   | `{ email, password }` (password ≥ 8 chars)                            | `201 { token, user }`                 |
+| POST   | `/api/auth/login`      | `{ email, password }`                                                 | `200 { token, user }`                 |
+| GET    | `/api/auth/me`         | —                                                                     | `200 { user }`                        |
+| GET    | `/api/tasks?labelId=…` | —                                                                     | `200 Task[]` in list order            |
+| POST   | `/api/tasks`           | `{ title, description?, dueDate?, priority?, labelIds?, completed? }` | `201 Task`                            |
+| PUT    | `/api/tasks/:id`       | any subset of the create fields                                       | `200 Task`                            |
+| PUT    | `/api/tasks/order`     | `{ ids: string[] }`                                                   | `200 Task[]`                          |
+| DELETE | `/api/tasks/:id`       | —                                                                     | `204`                                 |
+| GET    | `/api/labels`          | —                                                                     | `200 Label[]` in creation order       |
+| POST   | `/api/labels`          | `{ name, color? }`                                                    | `201 Label`, `409` if the name exists |
+| PUT    | `/api/labels/:id`      | `{ name?, color? }`                                                   | `200 Label`                           |
+| DELETE | `/api/labels/:id`      | —                                                                     | `204` (also removed from tasks)       |
+| GET    | `/health`              | —                                                                     | `200 { status: "ok" }`                |
 
-`Task` = `{ id, title, description, dueDate, priority, labels, completed, position }`.
+- `Task` = `{ id, title, description, dueDate, priority, labelIds, completed, position }`
+- `Label` = `{ id, name, color }`. Names are 1–30 characters and unique per user, ignoring case. `color` is one of `red, orange, amber, green, teal, sky, blue, violet, pink, slate`; when omitted, an unused one is picked.
+- New accounts start with the labels Work, Shopping and University. Tasks can only use the caller's own labels.
 
 ## Security
 

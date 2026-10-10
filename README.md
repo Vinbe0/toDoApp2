@@ -7,6 +7,7 @@ A full-stack task planner: a **Vue 3 + TypeScript + Pinia** frontend and an **Ex
 ## Features
 
 - **Tasks with details**: title, description, deadline, priority (high / medium / low) and labels
+- **Custom labels**: create, rename, recolour and delete your own labels from the sidebar, or add one while writing a task. Guest labels are carried over when you sign up.
 - **Combinable filters**: status, title search and labels (match any or all), sorted manually, by deadline or by priority
 - **Drag-and-drop ordering** that also works inside a filtered view
 - **Inline editing**: double-click a task to rename it, Enter saves, Esc cancels
