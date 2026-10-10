@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint . --fix --cache",
+    "lint:check": "eslint . --cache",
+    "format": "prettier --write src/ *.ts index.html",
+    "format:check": "prettier --check src/ *.ts index.html"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
@@ -25,9 +29,15 @@
     "@types/jsdom": "^30.0.0",
     "@types/node": "^22.20.5",
     "@vitejs/plugin-vue": "^6.0.4",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.9.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-vue": "^10.11.1",
+    "jiti": "^2.7.0",
     "jsdom": "^30.1.2",
+    "prettier": "^3.9.9",
     "typescript": "~5.9",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.6",
