@@ -8,7 +8,7 @@ import EmptyState from "@/shared/ui/EmptyState.vue";
 import TaskComposer from "@/features/tasks/components/TaskComposer.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import TaskListSkeleton from "@/features/tasks/components/TaskListSkeleton.vue";
-import TaskSidebar from "@/features/tasks/components/TaskSidebar.vue";
+import TaskSidebar, { type LabelActions } from "@/features/tasks/components/TaskSidebar.vue";
 import ViewMenu from "@/features/tasks/components/ViewMenu.vue";
 import { groupByDue, isQueryActive } from "@/features/tasks/model/query";
 import { useLabelsStore } from "@/features/tasks/stores/labelsStore";
@@ -42,6 +42,13 @@ const sort = computed({
 const dueGroups = computed(() =>
   query.value.sort === "deadline" ? groupByDue(visibleTasks.value) : null,
 );
+
+const labelActions: LabelActions = {
+  create: async (name) => (await labelsStore.create(name)) !== null,
+  rename: (id, name) => labelsStore.rename(id, name),
+  recolor: (id, color) => labelsStore.recolor(id, color),
+  remove: (id) => labelsStore.remove(id),
+};
 
 const statusTitles = { all: "All tasks", active: "Active", completed: "Completed" } as const;
 
@@ -100,6 +107,7 @@ const addTask = () => {
         :label-counts="labelCounts"
         :account-name="account.name"
         :account-hint="account.hint"
+        :label-actions="labelActions"
         @add-task="addTask"
       />
     </aside>

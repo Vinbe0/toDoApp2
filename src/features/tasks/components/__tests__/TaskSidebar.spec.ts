@@ -1,11 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { flushPromises } from "@vue/test-utils";
 import { mount } from "@vue/test-utils";
 import { DEFAULT_LABELS } from "@/features/tasks/model/label";
 import { createDefaultQuery, type TaskQuery } from "@/features/tasks/model/query";
 import TaskSidebar from "../TaskSidebar.vue";
 
-function mountSidebar(query: Partial<TaskQuery> = {}) {
+function mountSidebar(query: Partial<TaskQuery> = {}, labelActions?: Record<string, unknown>) {
   return mount(TaskSidebar, {
+    attachTo: document.body,
     props: {
       query: { ...createDefaultQuery(), ...query },
       labels: DEFAULT_LABELS,
@@ -13,6 +15,7 @@ function mountSidebar(query: Partial<TaskQuery> = {}) {
       labelCounts: { work: 2, shopping: 1, university: 0 },
       accountName: "Guest",
       accountHint: "Saved in this browser",
+      labelActions: labelActions as never,
     },
   });
 }
@@ -58,5 +61,72 @@ describe("TaskSidebar", () => {
     const wrapper = mountSidebar();
     await button(wrapper, "Add task").trigger("click");
     expect(wrapper.emitted("addTask")).toHaveLength(1);
+  });
+});
+
+describe("TaskSidebar label management", () => {
+  const actions = () => ({
+    create: vi.fn(async () => true),
+    rename: vi.fn(async () => true),
+    recolor: vi.fn(async () => true),
+    remove: vi.fn(async () => {}),
+  });
+
+  it("is read-only without label actions", () => {
+    const wrapper = mountSidebar();
+    expect(wrapper.find('[aria-label="Add label"]').exists()).toBe(false);
+    expect(wrapper.find('[aria-label^="Options for label"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("creates a label from the + button", async () => {
+    const labelActions = actions();
+    const wrapper = mountSidebar({}, labelActions);
+
+    await wrapper.get('[aria-label="Add label"]').trigger("click");
+    await wrapper.get('input[aria-label="Label name"]').setValue("Gym");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(labelActions.create).toHaveBeenCalledWith("Gym");
+    expect(wrapper.find('input[aria-label="Label name"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("renames, recolours and deletes from the label menu", async () => {
+    const labelActions = actions();
+    const wrapper = mountSidebar({}, labelActions);
+    const openMenu = () => wrapper.get('[aria-label="Options for label Work"]').trigger("click");
+
+    await openMenu();
+    await wrapper.get('[aria-label="Colour teal"]').trigger("click");
+    expect(labelActions.recolor).toHaveBeenCalledWith("work", "teal");
+
+    await button(wrapper, "Rename").trigger("click");
+    const input = wrapper.get('input[aria-label="Label name"]');
+    expect((input.element as HTMLInputElement).value).toBe("Work");
+    await input.setValue("Job");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(labelActions.rename).toHaveBeenCalledWith("work", "Job");
+
+    await openMenu();
+    await button(wrapper, "Delete").trigger("click");
+    expect(wrapper.text()).toContain("It will be removed from 2 open tasks.");
+    expect(labelActions.remove).not.toHaveBeenCalled();
+    await button(wrapper, "Delete label").trigger("click");
+    expect(labelActions.remove).toHaveBeenCalledWith("work");
+    wrapper.unmount();
+  });
+
+  it("closes the label menu on Escape", async () => {
+    const wrapper = mountSidebar({}, actions());
+    await wrapper.get('[aria-label="Options for label Work"]').trigger("click");
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    wrapper.unmount();
   });
 });
