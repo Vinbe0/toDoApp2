@@ -1,3 +1,4 @@
+import type { Label } from "../domain/label.js";
 import type { Task } from "../domain/task.js";
 
 /** The task shape sent to clients. Internal fields like the owner id stay private. */
@@ -12,4 +13,8 @@ export function toTaskResponse(task: Task) {
     completed: task.completed,
     position: task.position,
   };
+}
+
+export function toLabelResponse(label: Label) {
+  return { id: label.id, name: label.name, color: label.color };
 }

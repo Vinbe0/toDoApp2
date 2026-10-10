@@ -3,12 +3,14 @@ import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // Backend
 import { AuthService } from "../server/src/application/AuthService.js";
+import { LabelService } from "../server/src/application/LabelService.js";
 import { TaskService } from "../server/src/application/TaskService.js";
 import { createApp } from "../server/src/http/app.js";
 import {
   connectDatabase,
   type DatabaseConnection,
 } from "../server/src/infrastructure/db/client.js";
+import { DrizzleLabelRepository } from "../server/src/infrastructure/repositories/DrizzleLabelRepository.js";
 import { DrizzleTaskRepository } from "../server/src/infrastructure/repositories/DrizzleTaskRepository.js";
 import { DrizzleUserRepository } from "../server/src/infrastructure/repositories/DrizzleUserRepository.js";
 import { BcryptPasswordHasher } from "../server/src/infrastructure/security/BcryptPasswordHasher.js";
@@ -25,12 +27,15 @@ let baseUrl: string;
 
 beforeAll(async () => {
   database = await connectDatabase({ pgliteDataDir: "memory://" });
+  const labelService = new LabelService(new DrizzleLabelRepository(database.db));
   const app = createApp({
+    labelService,
     taskService: new TaskService(new DrizzleTaskRepository(database.db)),
     authService: new AuthService(
       new DrizzleUserRepository(database.db),
       new BcryptPasswordHasher(4),
       new JwtTokenService("integration-secret"),
+      (userId) => labelService.createDefaultLabels(userId),
     ),
   });
   server = app.listen(0);

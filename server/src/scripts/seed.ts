@@ -4,9 +4,11 @@
  * Safe to run more than once: an existing demo account is left untouched.
  */
 import { AuthService } from "../application/AuthService.js";
+import { LabelService } from "../application/LabelService.js";
 import { TaskService, type CreateTaskInput } from "../application/TaskService.js";
 import { loadConfig } from "../config.js";
 import { connectDatabase } from "../infrastructure/db/client.js";
+import { DrizzleLabelRepository } from "../infrastructure/repositories/DrizzleLabelRepository.js";
 import { DrizzleTaskRepository } from "../infrastructure/repositories/DrizzleTaskRepository.js";
 import { DrizzleUserRepository } from "../infrastructure/repositories/DrizzleUserRepository.js";
 import { BcryptPasswordHasher } from "../infrastructure/security/BcryptPasswordHasher.js";
@@ -34,10 +36,12 @@ try {
   if (await users.getUserByEmail(DEMO_ACCOUNT.email)) {
     console.log(`Demo account ${DEMO_ACCOUNT.email} already exists; nothing to do.`);
   } else {
+    const labels = new LabelService(new DrizzleLabelRepository(database.db));
     const auth = new AuthService(
       users,
       new BcryptPasswordHasher(),
       new JwtTokenService(config.jwtSecret),
+      (userId) => labels.createDefaultLabels(userId),
     );
     const tasks = new TaskService(new DrizzleTaskRepository(database.db));
 

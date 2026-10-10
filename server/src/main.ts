@@ -1,8 +1,10 @@
 import { AuthService } from "./application/AuthService.js";
+import { LabelService } from "./application/LabelService.js";
 import { TaskService } from "./application/TaskService.js";
 import { loadConfig } from "./config.js";
 import { createApp } from "./http/app.js";
 import { connectDatabase } from "./infrastructure/db/client.js";
+import { DrizzleLabelRepository } from "./infrastructure/repositories/DrizzleLabelRepository.js";
 import { DrizzleTaskRepository } from "./infrastructure/repositories/DrizzleTaskRepository.js";
 import { DrizzleUserRepository } from "./infrastructure/repositories/DrizzleUserRepository.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/BcryptPasswordHasher.js";
@@ -12,16 +14,19 @@ const config = loadConfig();
 const database = await connectDatabase(config.database);
 
 // Composition root: the only place that picks concrete implementations.
+const labelService = new LabelService(new DrizzleLabelRepository(database.db));
 const taskService = new TaskService(new DrizzleTaskRepository(database.db));
 const authService = new AuthService(
   new DrizzleUserRepository(database.db),
   new BcryptPasswordHasher(),
   new JwtTokenService(config.jwtSecret, config.jwtExpiresIn),
+  (userId) => labelService.createDefaultLabels(userId),
 );
 
 const app = createApp({
   taskService,
   authService,
+  labelService,
   corsOrigins: config.corsOrigins,
   simulateLatency: config.simulateLatency,
 });

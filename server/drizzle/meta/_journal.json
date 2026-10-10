@@ -29,6 +29,13 @@
       "when": 1791616602277,
       "tag": "0003_integer_positions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791637664380,
+      "tag": "0004_labels",
+      "breakpoints": true
     }
   ]
 }

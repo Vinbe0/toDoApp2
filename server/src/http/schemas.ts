@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LABEL_COLORS, MAX_LABEL_NAME_LENGTH } from "../domain/label.js";
 import { ALLOWED_LABELS, PRIORITIES } from "../domain/task.js";
 
 const email = z.string().trim().toLowerCase().email("Enter a valid email address").max(254);
@@ -52,3 +53,22 @@ export const reorderTasksSchema = z
 export const taskQuerySchema = z.object({
   label: z.enum(ALLOWED_LABELS as [string, ...string[]]).optional(),
 });
+
+const labelName = z
+  .string()
+  .trim()
+  .min(1, "Label name cannot be empty")
+  .max(
+    MAX_LABEL_NAME_LENGTH,
+    `Label name must be at most ${MAX_LABEL_NAME_LENGTH} characters long`,
+  );
+const labelColor = z.enum(LABEL_COLORS);
+
+export const createLabelSchema = z
+  .object({ name: labelName, color: labelColor.optional() })
+  .strict();
+
+export const updateLabelSchema = z
+  .object({ name: labelName.optional(), color: labelColor.optional() })
+  .strict()
+  .refine((body) => Object.keys(body).length > 0, "Provide a name or a colour");
