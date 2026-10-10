@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "category": "Technique",
+    "title": "Time Blocking Guide",
+    "description": "A practical step-by-step guide to plan focused work blocks and breaks that reduce context switching and increase deep work effectiveness.",
+    "meta": "Estimated: 15–90 min"
+  },
+  {
+    "id": "2",
+    "category": "Prioritization",
+    "title": "MITs Planner",
+    "description": "A simple planner for identifying 1–3 Most Important Tasks each day so high-impact work happens first.",
+    "meta": "Benefit: Higher impact work"
+  },
+  {
+    "id": "3",
+    "category": "Environment",
+    "title": "Distraction Control Toolkit",
+    "description": "Ideas and settings to minimize interruptions: notification rules, workspace adjustments, and boundary-setting templates.",
+    "meta": "Tip: Use Do Not Disturb"
+  },
+  {
+    "id": "4",
+    "category": "Technique",
+    "title": "Pomodoro Starter Kit",
+    "description": "A beginner-friendly introduction to the Pomodoro method with timers, break strategies, and tracking sheets.",
+    "meta": "Estimated: 25–120 min"
+  },
+  {
+    "id": "5",
+    "category": "Routine",
+    "title": "Energy Management Routine",
+    "description": "Strategies for aligning demanding tasks with your peak energy windows and scheduling restorative breaks to sustain performance.",
+    "meta": "Benefit: Sustained performance"
+  },
+  {
+    "id": "6",
+    "category": "Reflection",
+    "title": "Weekly Review Template",
+    "description": "A concise template to review progress, capture learnings, and plan priorities for the coming week to maintain momentum.",
+    "meta": "Benefit: Clear direction"
+  }
+]
