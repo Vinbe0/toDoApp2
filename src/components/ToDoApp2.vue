@@ -9,7 +9,7 @@
         type="text"
         class="rounded-2xl bg-gray-200 px-2 py-1.5 font-semibold"
         placeholder="Enter title..."
-        @click="handleSearch"
+        @input="handleSearch"
         v-model="searchTitle"
         />
         <h2 class="mb-6 text-xl font-bold text-black">Filters</h2>
@@ -210,6 +210,7 @@
                     v-model="editing.value"
                     @blur="saveEdit"
                     @keyup.enter="saveEdit"
+                    @keyup.esc="cancelEdit"
                   />
                 </div>
               </div>
@@ -254,6 +255,7 @@ const {
   completeTask,
   startEdit,
   saveEdit,
+  cancelEdit,
   clearCompleted,
   openLabelFilter,
   toggleDraftLabel,

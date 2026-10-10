@@ -3,10 +3,13 @@ import { useToast } from "vue-toastification";
 import type { FilterMode, Label, Priority, Task } from "@/types/todo";
 import { useAuth } from "./useAuth";
 import { tasksApi } from "@/api/tasksApi";
+import { ApiError } from "@/api/client";
 
 const GUEST_STORAGE_KEY = "guest-tasks";
 
-const { isRegistered } = useAuth();
+const { isRegistered, logout } = useAuth();
+
+const UNDO_TIMEOUT_MS = 5000;
 
 export const availableLabels: Label[] = ["work", "shopping", "university"];
 
@@ -52,6 +55,15 @@ export function useTasks() {
   const labelFilterOpen = ref<boolean>(false);
   const strictLabelFilter = ref<boolean>(false);
   const searchTitle = ref<string>("");
+
+  function handleError(error: unknown, fallback: string) {
+    if (error instanceof ApiError && error.status === 401) {
+      logout();
+      toast.error("Your session has expired. Please log in again.");
+      return;
+    }
+    toast.error(error instanceof Error ? error.message : fallback);
+  }
 
   function saveGuestTasks() {
     localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(tasks.value));
@@ -99,7 +111,11 @@ export function useTasks() {
 
   async function reloadTasks() {
     if (isRegistered.value) {
-      tasks.value = await tasksApi.getTasks();
+      try {
+        tasks.value = await tasksApi.getTasks();
+      } catch (error) {
+        handleError(error, "Could not load your tasks");
+      }
     } else {
       loadGuestTasks();
     }
@@ -192,6 +208,7 @@ export function useTasks() {
         }
         return task;
       });
+      if (!isRegistered.value) saveGuestTasks();
     },
   });
 
@@ -216,8 +233,13 @@ export function useTasks() {
     };
 
     if (isRegistered.value) {
-      const created = await tasksApi.createTask(newTask);
-      tasks.value.push(created);
+      try {
+        const created = await tasksApi.createTask(newTask);
+        tasks.value.push({ ...created, labels: newTask.labels });
+      } catch (error) {
+        handleError(error, "Could not create the task");
+        return;
+      }
     } else {
       tasks.value.push(newTask);
       saveGuestTasks();
@@ -228,9 +250,14 @@ export function useTasks() {
   const deleteTask = async (taskId: string) => {
     const index = tasks.value.findIndex((task) => task.id === taskId);
     if (index === -1) return;
-    tasks.value.splice(index, 1);
+    const [removed] = tasks.value.splice(index, 1);
     if (isRegistered.value) {
-      await tasksApi.deleteTask(taskId);
+      try {
+        await tasksApi.deleteTask(taskId);
+      } catch (error) {
+        tasks.value.splice(index, 0, removed);
+        handleError(error, "Could not delete the task");
+      }
     } else {
       saveGuestTasks();
     }
@@ -239,13 +266,15 @@ export function useTasks() {
   const completeTask = async (taskId: string) => {
     const task = tasks.value.find((item) => item.id === taskId);
     if (!task) return;
+    task.completed = !task.completed;
     if (isRegistered.value) {
-      task.completed = !task.completed;
-      await tasksApi.updateTask(taskId, {
-        completed: task.completed,
-      });
+      try {
+        await tasksApi.updateTask(taskId, { completed: task.completed });
+      } catch (error) {
+        task.completed = !task.completed;
+        handleError(error, "Could not update the task");
+      }
     } else {
-      task.completed = !task.completed;
       saveGuestTasks();
     }
   };
@@ -261,13 +290,24 @@ export function useTasks() {
     const task = tasks.value.find((item) => item.id === id);
     if (!task) return;
 
+    const previousText = task.text;
+    task.text = editing.value.value.trim() || task.text;
+    editing.value = { id: null, value: "" };
+    if (task.text === previousText) return;
+
     if (isRegistered.value) {
-      task.text = editing.value.value.trim() || task.text;
-      await tasksApi.updateTask(id, { text: task.text });
+      try {
+        await tasksApi.updateTask(id, { text: task.text });
+      } catch (error) {
+        task.text = previousText;
+        handleError(error, "Could not rename the task");
+      }
     } else {
-      task.text = editing.value.value.trim() || task.text;
       saveGuestTasks();
     }
+  };
+
+  const cancelEdit = () => {
     editing.value = { id: null, value: "" };
   };
 
@@ -280,16 +320,23 @@ export function useTasks() {
     }
 
     const previousTasks = tasks.value.slice();
+    tasks.value = tasks.value.filter((task) => !task.completed);
+    if (!isRegistered.value) saveGuestTasks();
 
-    if (isRegistered.value) {
-      await Promise.all(
+    // Registered users: delay the server-side delete so "Undo" can cancel it.
+    let undone = false;
+    const commitDelete = async () => {
+      if (undone || !isRegistered.value) return;
+      const results = await Promise.allSettled(
         completedTasks.map((task) => tasksApi.deleteTask(task.id)),
       );
-      tasks.value = tasks.value.filter((task) => !task.completed);
-    } else {
-      tasks.value = tasks.value.filter((task) => !task.completed);
-      saveGuestTasks();
-    }
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed) {
+        toast.error(`Could not delete ${failed} task${failed === 1 ? "" : "s"}`);
+        await reloadTasks();
+      }
+    };
+    const deleteTimer = setTimeout(commitDelete, UNDO_TIMEOUT_MS);
 
     const toastId = toast(
       h("div", { class: "flex items-center gap-3" }, [
@@ -302,14 +349,17 @@ export function useTasks() {
           {
             class: "bg-green-500 px-2 py-1 rounded text-white font-bold",
             onClick: () => {
+              undone = true;
+              clearTimeout(deleteTimer);
               tasks.value = previousTasks;
+              if (!isRegistered.value) saveGuestTasks();
               toast.dismiss(toastId);
             },
           },
           "Undo",
         ),
       ]),
-      { timeout: 5000, closeOnClick: false },
+      { timeout: UNDO_TIMEOUT_MS, closeOnClick: false },
     );
   };
 
@@ -356,6 +406,7 @@ export function useTasks() {
     completeTask,
     startEdit,
     saveEdit,
+    cancelEdit,
     clearCompleted,
     openLabelFilter,
     toggleDraftLabel,
