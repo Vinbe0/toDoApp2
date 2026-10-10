@@ -5,26 +5,26 @@
           <div class="bg-gray-100 p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold">For Base Users</h2>
             <p class="mt-2 mb-4">
-              Star to plan you day efficiently
+              Start planning your day efficiently
             </p>
-            <a
-              href="/first"
+            <RouterLink
+              to="/first"
               class="inline-block bg-black text-white rounded-lg px-4 py-2 hover:bg-gray-700"
             >
               Add Tasks
-            </a>
+            </RouterLink>
           </div>
           <div class="bg-green-100 p-6 rounded-lg shadow-md">
             <h2 class="text-2xl font-bold">For Advanced Users</h2>
             <p class="mt-2 mb-4">
-              Set you tasks with our Pro Version
+              Sign up to sync your tasks across devices
             </p>
-            <a
-              href="/"
+            <RouterLink
+              to="/register"
               class="inline-block bg-green-500 text-white rounded-lg px-4 py-2 hover:bg-green-600"
             >
-              Add Tasks
-            </a>
+              Create Account
+            </RouterLink>
           </div>
         </div>
       </div>

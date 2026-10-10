@@ -1,32 +1,47 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center gap-2">
-    <div
+  <div class="min-h-screen flex flex-col items-center justify-center gap-2 px-4">
+    <form
       class="bg-white py-3 px-3 rounded-xl min-h-36 max-w-sm w-full gap-3 flex flex-col items-center"
+      @submit.prevent="submit"
+      novalidate
     >
-      <img class="h-20 w-auto" :src="logo" alt="Vue Jobs" />
-      <h2 class="font-bold text-green-700 text-3xl">REGISTRATION FORM</h2>
+      <img class="h-20 w-auto" :src="logo" alt="TODOS logo" />
+      <h1 class="font-bold text-green-700 text-3xl">SIGN UP</h1>
+      <label for="email" class="sr-only">Email</label>
       <input
+        id="email"
         type="email"
-        v-model="email"
+        v-model.trim="email"
+        autocomplete="email"
+        required
         class="border border-gray-300 rounded-xl px-1.5 py-1 shadow-xs w-full"
         placeholder="email"
       />
+      <label for="password" class="sr-only">Password</label>
       <input
+        id="password"
         type="password"
         v-model="password"
+        autocomplete="new-password"
+        required
+        minlength="6"
         class="border border-gray-300 rounded-xl px-1.5 py-1 shadow-xs w-full"
         placeholder="password"
       />
       <button
-        class="bg-green-600 rounded-2xl px-1.5 font-bold text-white w-full h-10 text-xl hover:bg-green-700"
-        @click="submit"
+        type="submit"
+        class="bg-green-600 rounded-2xl px-1.5 font-bold text-white w-full h-10 text-xl hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
         :disabled="isLoading"
       >
-        Sign up
+        {{ isLoading ? "Creating account…" : "Sign up" }}
       </button>
+      <p v-if="errorMessage" role="alert" class="text-red-700 text-sm font-semibold">{{ errorMessage }}</p>
+      <p class="text-sm text-gray-600">
+        Already have an account?
+        <RouterLink to="/login" class="font-bold text-green-700 hover:underline">Log in</RouterLink>
+      </p>
       <p class="font-bold text-gray-400 text-sm">Your data is private</p>
-    </div>
-    <p v-if="errorMessage" class="text-red-700 text-xl">{{ errorMessage }}</p>
+    </form>
   </div>
 </template>
 
@@ -45,9 +60,20 @@ const password = ref<string>('');
 const errorMessage = ref<string>('');
 const isLoading = ref<boolean>(false);
 
+const validate = () => {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    return "Please enter a valid email address";
+  }
+  if (password.value.length < 6) {
+    return "Password must be at least 6 characters";
+  }
+  return "";
+};
+
 const submit = async () => {
+  errorMessage.value = validate();
+  if (errorMessage.value) return;
   isLoading.value = true;
-  errorMessage.value = "";
   try {
     await register(email.value, password.value);
     try {
