@@ -5,28 +5,50 @@ import BaseCard from "@/shared/ui/BaseCard.vue";
 import BaseInput from "@/shared/ui/BaseInput.vue";
 import LabelChip from "@/features/tasks/components/LabelChip.vue";
 import { labelName, priorityOptions } from "@/features/tasks/components/taskDisplay";
-import type { Label, Priority } from "@/features/tasks/model/types";
+import type { Label } from "@/features/tasks/model/types";
+import type { NewTask } from "@/features/tasks/repositories";
 
-const props = defineProps<{ labels: readonly Label[] }>();
-const emit = defineEmits<{ submit: []; toggleLabel: [label: Label] }>();
+const props = defineProps<{
+  labels: readonly Label[];
+  /** Saves the task; the form resets only when this resolves to true. */
+  save: (task: NewTask) => Promise<boolean>;
+}>();
 
-const text = defineModel<string>("text", { required: true });
-const description = defineModel<string>("description", { required: true });
-const deadline = defineModel<string | null>("deadline", { required: true });
-const priority = defineModel<Priority>("priority", { required: true });
-const selectedLabels = defineModel<Label[]>("selectedLabels", { required: true });
-
-const showDetails = ref(false);
-
-const deadlineInput = computed({
-  get: () => deadline.value ?? "",
-  set: (value: string) => (deadline.value = value || null),
+const createDraft = (): NewTask => ({
+  text: "",
+  description: "",
+  deadline: null,
+  priority: "medium",
+  labels: [],
 });
 
-const submit = () => {
-  if (!text.value.trim()) return;
-  emit("submit");
-  showDetails.value = false;
+const draft = ref<NewTask>(createDraft());
+const showDetails = ref(false);
+const saving = ref(false);
+
+const deadlineInput = computed({
+  get: () => draft.value.deadline ?? "",
+  set: (value: string) => (draft.value.deadline = value || null),
+});
+
+const toggleLabel = (label: Label) => {
+  const labels = draft.value.labels;
+  draft.value.labels = labels.includes(label)
+    ? labels.filter((item) => item !== label)
+    : [...labels, label];
+};
+
+const submit = async () => {
+  if (!draft.value.text.trim() || saving.value) return;
+  saving.value = true;
+  try {
+    if (await props.save({ ...draft.value, labels: [...draft.value.labels] })) {
+      draft.value = createDraft();
+      showDetails.value = false;
+    }
+  } finally {
+    saving.value = false;
+  }
 };
 </script>
 
@@ -34,21 +56,21 @@ const submit = () => {
   <BaseCard as="form" class="grid gap-4" @submit.prevent="submit">
     <div class="flex gap-2">
       <BaseInput
-        v-model="text"
+        v-model="draft.text"
         class="flex-1"
         aria-label="Task title"
         placeholder="What do you need to do?"
         @focus="showDetails = true"
       />
-      <BaseButton type="submit" :disabled="!text.trim()">
+      <BaseButton type="submit" :disabled="!draft.text.trim()" :loading="saving">
         <i class="pi pi-plus" aria-hidden="true" />
         <span class="hidden sm:inline">Add task</span>
       </BaseButton>
     </div>
 
-    <div v-if="showDetails || text" class="grid gap-4">
+    <div v-if="showDetails || draft.text" class="grid gap-4">
       <BaseInput
-        v-model="description"
+        v-model="draft.description"
         multiline
         rows="2"
         placeholder="Description (optional)"
@@ -74,12 +96,12 @@ const submit = () => {
               type="button"
               class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
               :class="
-                priority === option.value
+                draft.priority === option.value
                   ? 'bg-surface text-fg shadow-sm'
                   : 'text-fg-muted hover:text-fg'
               "
-              :aria-pressed="priority === option.value"
-              @click="priority = option.value"
+              :aria-pressed="draft.priority === option.value"
+              @click="draft.priority = option.value"
             >
               {{ option.label }}
             </button>
@@ -92,8 +114,8 @@ const submit = () => {
             <LabelChip
               v-for="label in props.labels"
               :key="label"
-              :selected="selectedLabels.includes(label)"
-              @toggle="emit('toggleLabel', label)"
+              :selected="draft.labels.includes(label)"
+              @toggle="toggleLabel(label)"
             >
               {{ labelName(label) }}
             </LabelChip>

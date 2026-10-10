@@ -1,27 +1,29 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import BaseCard from "@/shared/ui/BaseCard.vue";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { storeToRefs } from "pinia";
-import { useTasks } from "@/features/tasks/composables/useTasks";
+import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 
 const router = useRouter();
 const auth = useAuthStore();
 const { user } = storeToRefs(auth);
-const { tasks } = useTasks();
+const tasksStore = useTasksStore();
+const { counts } = storeToRefs(tasksStore);
+
+onMounted(() => {
+  if (tasksStore.status === "idle") void tasksStore.load();
+});
 
 const initials = computed(() => user.value?.email.slice(0, 2).toUpperCase() ?? "?");
 
-const stats = computed(() => {
-  const completed = tasks.value.filter((task) => task.completed).length;
-  return [
-    { label: "Total tasks", value: tasks.value.length },
-    { label: "Active", value: tasks.value.length - completed },
-    { label: "Completed", value: completed },
-  ];
-});
+const stats = computed(() => [
+  { label: "Total tasks", value: counts.value.all },
+  { label: "Active", value: counts.value.active },
+  { label: "Completed", value: counts.value.completed },
+]);
 
 const submit = () => {
   auth.logout();

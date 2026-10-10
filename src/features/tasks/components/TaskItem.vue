@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { nextTick, ref } from "vue";
 import BaseBadge from "@/shared/ui/BaseBadge.vue";
 import {
   formatDate,
@@ -11,27 +11,34 @@ import {
 } from "@/features/tasks/components/taskDisplay";
 import type { Task } from "@/features/tasks/model/types";
 
-const props = defineProps<{ task: Task; editing: boolean; draggable: boolean }>();
+const props = defineProps<{ task: Task; draggable: boolean }>();
 const emit = defineEmits<{
   toggle: [];
   remove: [];
-  startEdit: [];
-  saveEdit: [];
-  cancelEdit: [];
+  rename: [text: string];
 }>();
 
-const editValue = defineModel<string>("editValue", { required: true });
+const editing = ref(false);
+const editValue = ref("");
 const editInput = ref<HTMLInputElement | null>(null);
 
-watch(
-  () => props.editing,
-  async (editing) => {
-    if (!editing) return;
-    await nextTick();
-    editInput.value?.focus();
-    editInput.value?.select();
-  },
-);
+async function startEdit() {
+  editValue.value = props.task.text;
+  editing.value = true;
+  await nextTick();
+  editInput.value?.focus();
+  editInput.value?.select();
+}
+
+function saveEdit() {
+  if (!editing.value) return;
+  editing.value = false;
+  emit("rename", editValue.value);
+}
+
+function cancelEdit() {
+  editing.value = false;
+}
 </script>
 
 <template>
@@ -71,16 +78,16 @@ watch(
         v-model="editValue"
         aria-label="Task title"
         class="h-8 w-full rounded-lg border border-brand-500 bg-surface px-2 font-medium text-fg focus:ring-2 focus:ring-brand-500/20 focus:outline-none"
-        @blur="emit('saveEdit')"
-        @keyup.enter="emit('saveEdit')"
-        @keyup.esc="emit('cancelEdit')"
+        @blur="saveEdit"
+        @keyup.enter="saveEdit"
+        @keyup.esc="cancelEdit"
       />
       <p
         v-else
         class="font-medium break-words text-fg"
         :class="task.completed && 'text-fg-subtle line-through'"
         title="Double-click to rename"
-        @dblclick="emit('startEdit')"
+        @dblclick="startEdit"
       >
         {{ task.text }}
       </p>
@@ -110,7 +117,7 @@ watch(
         type="button"
         class="grid size-8 place-items-center rounded-lg text-fg-subtle hover:bg-surface-muted hover:text-fg"
         :aria-label="`Rename task ${task.text}`"
-        @click="emit('startEdit')"
+        @click="startEdit"
       >
         <i class="pi pi-pencil text-sm" aria-hidden="true" />
       </button>

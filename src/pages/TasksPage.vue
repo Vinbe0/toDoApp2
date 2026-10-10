@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
+import { storeToRefs } from "pinia";
 import { VueDraggable } from "vue-draggable-plus";
 import BaseBadge from "@/shared/ui/BaseBadge.vue";
 import BaseButton from "@/shared/ui/BaseButton.vue";
@@ -7,32 +8,22 @@ import EmptyState from "@/shared/ui/EmptyState.vue";
 import TaskComposer from "@/features/tasks/components/TaskComposer.vue";
 import TaskFilters from "@/features/tasks/components/TaskFilters.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
-import { useTasks } from "@/features/tasks/composables/useTasks";
+import TaskListSkeleton from "@/features/tasks/components/TaskListSkeleton.vue";
+import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 import { LABELS } from "@/features/tasks/model/task";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { storeToRefs } from "pinia";
 
 const { isRegistered } = storeToRefs(useAuthStore());
-const {
-  tasks,
-  query,
-  counts,
-  draftTask,
-  editing,
-  draggableTasks,
-  addNewTask,
-  deleteTask,
-  completeTask,
-  startEdit,
-  saveEdit,
-  cancelEdit,
-  clearCompleted,
-  resetQuery,
-  toggleDraftLabel,
-} = useTasks();
+const store = useTasksStore();
+const { tasks, query, status, visibleTasks, counts, canReorder } = storeToRefs(store);
 
-// Manual ordering is only meaningful when the list isn't sorted.
-const canReorder = computed(() => query.value.sort === "manual");
+onMounted(() => void store.load());
+
+// vue-draggable-plus needs a writable list; writes become a reorder.
+const draggableTasks = computed({
+  get: () => visibleTasks.value,
+  set: (reordered) => store.reorder(reordered),
+});
 </script>
 
 <template>
@@ -58,24 +49,28 @@ const canReorder = computed(() => query.value.sort === "manual");
         v-model:query="query"
         :labels="LABELS"
         :counts="counts"
-        @reset="resetQuery"
-        @clear-completed="clearCompleted"
+        @reset="store.resetQuery"
+        @clear-completed="store.clearCompleted"
       />
 
       <section class="grid gap-4" aria-label="Tasks">
-        <TaskComposer
-          v-model:text="draftTask.text"
-          v-model:description="draftTask.description"
-          v-model:deadline="draftTask.deadline"
-          v-model:priority="draftTask.priority"
-          v-model:selected-labels="draftTask.labels"
-          :labels="LABELS"
-          @submit="addNewTask"
-          @toggle-label="toggleDraftLabel"
-        />
+        <TaskComposer :labels="LABELS" :save="store.add" />
+
+        <TaskListSkeleton v-if="status === 'loading' && !tasks.length" />
 
         <EmptyState
-          v-if="!draggableTasks.length"
+          v-else-if="status === 'error' && !tasks.length"
+          icon="pi-exclamation-triangle"
+          title="Couldn't load your tasks"
+          description="Check your connection and try again."
+        >
+          <BaseButton variant="secondary" size="sm" class="mt-2" @click="store.load">
+            Try again
+          </BaseButton>
+        </EmptyState>
+
+        <EmptyState
+          v-else-if="!draggableTasks.length"
           :icon="tasks.length ? 'pi-filter-slash' : 'pi-check-square'"
           :title="tasks.length ? 'No tasks match this view' : 'No tasks yet'"
           :description="
@@ -89,7 +84,7 @@ const canReorder = computed(() => query.value.sort === "manual");
             variant="secondary"
             size="sm"
             class="mt-2"
-            @click="resetQuery"
+            @click="store.resetQuery"
           >
             Reset filters
           </BaseButton>
@@ -108,15 +103,11 @@ const canReorder = computed(() => query.value.sort === "manual");
           <TaskItem
             v-for="task in draggableTasks"
             :key="task.id"
-            v-model:edit-value="editing.value"
             :task="task"
-            :editing="editing.id === task.id"
             :draggable="canReorder"
-            @toggle="completeTask(task.id)"
-            @remove="deleteTask(task.id)"
-            @start-edit="startEdit(task)"
-            @save-edit="saveEdit"
-            @cancel-edit="cancelEdit"
+            @toggle="store.toggle(task.id)"
+            @remove="store.remove(task.id)"
+            @rename="store.rename(task.id, $event)"
           />
         </VueDraggable>
       </section>

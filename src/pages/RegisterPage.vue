@@ -53,12 +53,13 @@ import BaseButton from "@/shared/ui/BaseButton.vue";
 import { RouterLink } from "vue-router";
 import { ref } from "vue";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-import { useTasks } from "@/features/tasks/composables/useTasks";
+import { useTasksStore } from "@/features/tasks/stores/tasksStore";
+import { notify } from "@/shared/lib/notify";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const auth = useAuthStore();
-const { importGuestTasks } = useTasks();
+const tasksStore = useTasksStore();
 const email = ref<string>("");
 const password = ref<string>("");
 const errorMessage = ref<string>("");
@@ -81,7 +82,10 @@ const submit = async () => {
   try {
     await auth.register(email.value, password.value);
     try {
-      await importGuestTasks();
+      const imported = await tasksStore.importGuestTasks((count) =>
+        window.confirm(`Import ${count} task(s) from guest mode into your account?`),
+      );
+      if (imported) notify.success(`Imported ${imported} task(s) into your account`);
     } catch {
       // Registration succeeded even if guest import fails.
     }

@@ -50,7 +50,8 @@ import { RouterLink } from "vue-router";
 import { ref } from "vue";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useRouter } from "vue-router";
-import { useTasks } from "@/features/tasks/composables/useTasks";
+import { useTasksStore } from "@/features/tasks/stores/tasksStore";
+import { notify } from "@/shared/lib/notify";
 
 const router = useRouter();
 const email = ref<string>("");
@@ -58,7 +59,7 @@ const password = ref<string>("");
 const errorMessage = ref<string>("");
 const isLoading = ref<boolean>(false);
 const auth = useAuthStore();
-const { importGuestTasks } = useTasks();
+const tasksStore = useTasksStore();
 
 const validate = () => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
@@ -77,7 +78,10 @@ const submit = async () => {
   try {
     await auth.login(email.value, password.value);
     try {
-      await importGuestTasks();
+      const imported = await tasksStore.importGuestTasks((count) =>
+        window.confirm(`Import ${count} task(s) from guest mode into your account?`),
+      );
+      if (imported) notify.success(`Imported ${imported} task(s) into your account`);
     } catch {
       // Login succeeded even if guest import fails.
     }
