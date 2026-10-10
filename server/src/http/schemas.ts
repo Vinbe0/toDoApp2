@@ -31,7 +31,10 @@ export const createTaskSchema = z
     description: z.string().max(2000).optional(),
     dueDate: dueDate.optional(),
     priority: z.enum(PRIORITIES as [string, ...string[]]).optional(),
-    label: z.enum(ALLOWED_LABELS as [string, ...string[]]).optional(),
+    labels: z
+      .array(z.enum(ALLOWED_LABELS as [string, ...string[]]))
+      .max(10)
+      .optional(),
   })
   .strict();
 

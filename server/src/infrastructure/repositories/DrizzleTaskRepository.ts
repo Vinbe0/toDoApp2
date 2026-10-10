@@ -14,7 +14,7 @@ const toTask = (row: TaskRow) =>
     description: row.description,
     dueDate: row.dueDate,
     priority: row.priority,
-    label: row.label,
+    labels: row.labels,
     completed: row.completed,
     position: row.position,
   });
@@ -50,7 +50,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         description: task.description,
         dueDate: task.dueDate,
         priority: task.priority,
-        label: task.label,
+        labels: task.labels,
         completed: task.completed,
         position: task.position,
       })
@@ -74,7 +74,7 @@ export class DrizzleTaskRepository implements TaskRepository {
         description: next.description,
         dueDate: next.dueDate,
         priority: next.priority,
-        label: next.label,
+        labels: next.labels,
         completed: next.completed,
         position: next.position,
       })

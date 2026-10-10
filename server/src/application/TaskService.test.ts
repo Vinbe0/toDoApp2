@@ -29,8 +29,8 @@ describe("TaskService", () => {
   });
 
   it("filters by label and validates the filter", async () => {
-    await service.createTask("u1", { title: "Work", label: "work" });
-    await service.createTask("u1", { title: "Milk", label: "shopping" });
+    await service.createTask("u1", { title: "Work", labels: ["work"] });
+    await service.createTask("u1", { title: "Milk", labels: ["shopping", "university"] });
 
     expect((await service.getAllTasks("u1", "shopping")).map((t) => t.title)).toEqual(["Milk"]);
     await expect(service.getAllTasks("u1", "gym")).rejects.toBeInstanceOf(ValidationError);

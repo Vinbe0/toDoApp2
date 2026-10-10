@@ -8,7 +8,7 @@ export interface CreateTaskInput {
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  label?: Label;
+  labels?: Label[];
 }
 
 export interface UpdateTaskInput {
@@ -16,7 +16,7 @@ export interface UpdateTaskInput {
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  label?: Label;
+  labels?: Label[];
   completed?: boolean;
   position?: string;
 }
@@ -33,7 +33,7 @@ export class TaskService {
         'Invalid label filter. Expected "work", "shopping", or "university".',
       );
     }
-    return tasks.filter((task) => task.label === label);
+    return tasks.filter((task) => task.hasLabel(label as Label));
   }
 
   async createTask(userId: string, input: CreateTaskInput): Promise<Task> {
@@ -50,7 +50,7 @@ export class TaskService {
       description: input.description ?? "",
       dueDate: input.dueDate ?? null,
       priority: input.priority ?? "low",
-      label: input.label ?? "work",
+      labels: input.labels ?? [],
       completed: false,
       position: TaskService.incrementPosition(lastPosition),
       userId,
@@ -61,9 +61,6 @@ export class TaskService {
     await this.getOwnedTask(userId, taskId);
     if (input.title !== undefined && !input.title.trim()) {
       throw new ValidationError("Task title cannot be empty");
-    }
-    if (input.label !== undefined && !ALLOWED_LABELS.includes(input.label)) {
-      throw new ValidationError('Invalid label. Expected "work", "shopping", or "university".');
     }
 
     const updated = await this.taskRepository.updateTask(taskId, input);

@@ -8,7 +8,7 @@ export function toTaskResponse(task: Task) {
     description: task.description,
     dueDate: task.dueDate,
     priority: task.priority,
-    label: task.label,
+    labels: task.labels,
     completed: task.completed,
     position: task.position,
   };

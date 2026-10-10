@@ -51,7 +51,7 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
         description: "All of them",
         dueDate: "2026-11-01",
         priority: "high",
-        label: "university",
+        labels: ["university", "work"],
       });
 
       const found = await repos.tasks.getTaskById(created.id);
@@ -61,7 +61,7 @@ function repositoryContract(name: string, setup: () => Promise<Repositories>) {
         description: "All of them",
         dueDate: "2026-11-01",
         priority: "high",
-        label: "university",
+        labels: ["university", "work"],
         completed: false,
       });
     });

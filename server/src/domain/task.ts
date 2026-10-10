@@ -14,7 +14,7 @@ export interface TaskProps {
   description?: string;
   dueDate?: string | null;
   priority?: Priority;
-  label?: Label;
+  labels?: Label[];
   completed?: boolean;
 }
 
@@ -27,7 +27,7 @@ export class Task {
   description: string;
   dueDate: string | null;
   priority: Priority;
-  label: Label;
+  labels: Label[];
   completed: boolean;
   /** Lexicographic sort key within the owner's list. */
   position: string;
@@ -40,7 +40,7 @@ export class Task {
     description = "",
     dueDate = null,
     priority = "low",
-    label = "work",
+    labels = [],
     completed = false,
   }: TaskProps) {
     this.id = id;
@@ -49,7 +49,8 @@ export class Task {
     this.description = description;
     this.dueDate = dueDate;
     this.priority = priority;
-    this.label = label;
+    // Order-preserving de-duplication: ["work", "work"] → ["work"].
+    this.labels = [...new Set(labels)];
     this.completed = completed;
     this.position = position;
     this.validate();
@@ -65,13 +66,17 @@ export class Task {
     if (!PRIORITIES.includes(this.priority)) {
       throw new ValidationError('Invalid priority level. Expected "low", "medium", or "high".');
     }
-    if (!ALLOWED_LABELS.includes(this.label)) {
+    if (!this.labels.every((label) => ALLOWED_LABELS.includes(label))) {
       throw new ValidationError('Invalid label. Expected "work", "shopping", or "university".');
     }
   }
 
   isOwnedBy(userId: string): boolean {
     return this.userId === userId;
+  }
+
+  hasLabel(label: Label): boolean {
+    return this.labels.includes(label);
   }
 
   toggleCompletion(): void {

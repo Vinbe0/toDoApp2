@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, date, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -21,9 +22,10 @@ export const tasks = pgTable(
     priority: text("priority", { enum: ["low", "medium", "high"] })
       .notNull()
       .default("low"),
-    label: text("label", { enum: ["work", "shopping", "university"] })
+    labels: text("labels", { enum: ["work", "shopping", "university"] })
+      .array()
       .notNull()
-      .default("work"),
+      .default(sql`'{}'::text[]`),
     completed: boolean("completed").notNull().default(false),
     position: text("position").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

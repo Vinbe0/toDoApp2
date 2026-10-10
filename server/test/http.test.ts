@@ -130,6 +130,14 @@ describe("HTTP API", () => {
       const { api, signUp } = createTestApp();
       const { auth } = await signUp();
       expect((await api.get("/api/tasks?label=gym").set(auth)).status).toBe(400);
+      expect(
+        (
+          await api
+            .post("/api/tasks")
+            .set(auth)
+            .send({ title: "x", labels: ["gym"] })
+        ).status,
+      ).toBe(400);
     });
   });
 
@@ -147,9 +155,13 @@ describe("HTTP API", () => {
       const created = await api
         .post("/api/tasks")
         .set(auth)
-        .send({ title: "Write tests", priority: "high", dueDate: "2026-11-01" });
+        .send({ title: "Write tests", priority: "high", dueDate: "2026-11-01", labels: ["work"] });
       expect(created.status).toBe(201);
-      expect(created.body).toMatchObject({ title: "Write tests", priority: "high" });
+      expect(created.body).toMatchObject({
+        title: "Write tests",
+        priority: "high",
+        labels: ["work"],
+      });
       const id = created.body.id as string;
 
       const list = await api.get("/api/tasks").set(auth);
