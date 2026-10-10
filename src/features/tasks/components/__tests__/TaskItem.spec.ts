@@ -55,7 +55,7 @@ describe("TaskItem", () => {
 
   it("renames on Enter after double-click", async () => {
     const wrapper = mountItem();
-    await wrapper.get("p.font-medium").trigger("dblclick");
+    await wrapper.get('p[title="Double-click to rename"]').trigger("dblclick");
 
     const input = wrapper.get('input[aria-label="Task title"]');
     await input.setValue("Write more tests");
