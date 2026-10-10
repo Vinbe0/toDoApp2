@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createTestApp } from "./helpers.js";
+import request from "supertest";
+import { createApp } from "../src/http/app.js";
+import { createTestApp, createTestServices } from "./helpers.js";
 
 describe("HTTP API", () => {
   it("reports health", async () => {
@@ -7,6 +9,34 @@ describe("HTTP API", () => {
     const res = await api.get("/health");
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("ok");
+  });
+
+  it("sends security headers and hides the framework", async () => {
+    const { api } = createTestApp();
+    const res = await api.get("/health");
+    expect(res.headers["x-content-type-options"]).toBe("nosniff");
+    expect(res.headers["x-powered-by"]).toBeUndefined();
+  });
+
+  it("only allows configured CORS origins", async () => {
+    const app = createApp({ ...createTestServices(), corsOrigins: ["http://localhost:5173"] });
+    const allowed = await request(app).get("/health").set("Origin", "http://localhost:5173");
+    const blocked = await request(app).get("/health").set("Origin", "https://evil.example");
+
+    expect(allowed.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(blocked.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("rate-limits auth attempts", async () => {
+    const app = createApp({ ...createTestServices(), authRateLimit: 2 });
+    const attempt = () =>
+      request(app).post("/api/auth/login").send({ email: "a@b.co", password: "wrong-password" });
+
+    expect((await attempt()).status).toBe(401);
+    expect((await attempt()).status).toBe(401);
+    const blocked = await attempt();
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.error).toBe("TooManyRequests");
   });
 
   it("returns JSON 404s for unknown routes", async () => {

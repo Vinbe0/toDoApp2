@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import type { AuthService } from "../application/AuthService.js";
 import type { TaskService } from "../application/TaskService.js";
 import { createAuthenticate } from "./middleware/authenticate.js";
@@ -11,14 +13,26 @@ import { createTasksRouter } from "./routes/tasks.js";
 export type AppDependencies = {
   taskService: TaskService;
   authService: AuthService;
+  /** Browser origins allowed by CORS. Omit to allow any origin (tests). */
+  corsOrigins?: string[];
+  /** Max auth requests per IP per 15 minutes. */
+  authRateLimit?: number;
   simulateLatency?: boolean;
 };
 
 /** Builds the Express app from its dependencies, so tests can pass in fakes. */
-export function createApp({ taskService, authService, simulateLatency: slow }: AppDependencies) {
+export function createApp({
+  taskService,
+  authService,
+  corsOrigins,
+  authRateLimit = 20,
+  simulateLatency: slow,
+}: AppDependencies) {
   const app = express();
 
-  app.use(cors());
+  app.disable("x-powered-by");
+  app.use(helmet());
+  app.use(cors(corsOrigins ? { origin: corsOrigins } : undefined));
   app.use(express.json({ limit: "100kb" }));
   if (slow) app.use(simulateLatency);
 
@@ -26,7 +40,15 @@ export function createApp({ taskService, authService, simulateLatency: slow }: A
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  app.use("/api/auth", createAuthRouter(authService));
+  // Slow down password guessing.
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: authRateLimit,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "TooManyRequests", message: "Too many attempts. Try again later." },
+  });
+  app.use("/api/auth", authLimiter, createAuthRouter(authService));
   app.use("/api/tasks", createTasksRouter(taskService, createAuthenticate(authService)));
 
   app.use(notFoundHandler);

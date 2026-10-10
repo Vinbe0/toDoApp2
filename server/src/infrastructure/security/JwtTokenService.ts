@@ -5,11 +5,14 @@ import { UnauthorizedError } from "../../domain/errors.js";
 export class JwtTokenService implements TokenService {
   constructor(
     private readonly secret: string,
-    private readonly expiresIn: jwt.SignOptions["expiresIn"] = "7d",
+    /** e.g. "7d", "12h"; see the jsonwebtoken docs for the format. */
+    private readonly expiresIn = "7d",
   ) {}
 
   sign(payload: TokenPayload): string {
-    return jwt.sign(payload, this.secret, { expiresIn: this.expiresIn });
+    return jwt.sign(payload, this.secret, {
+      expiresIn: this.expiresIn as NonNullable<jwt.SignOptions["expiresIn"]>,
+    });
   }
 
   verify(token: string): TokenPayload {
