@@ -54,8 +54,8 @@ const toggleLabel = (label: Label) => {
 async function focus() {
   open.value = true;
   await nextTick();
+  // focus() also scrolls the field into view.
   titleInput.value?.focus();
-  titleInput.value?.scrollIntoView({ block: "nearest" });
 }
 
 defineExpose({ focus });
