@@ -57,6 +57,32 @@ describe("TaskSidebar", () => {
     expect(mountSidebar({ labelIds: ["work", "shopping"] }).text()).toContain("Must match all");
   });
 
+  it("switches between list views and Upcoming", async () => {
+    const list = mountSidebar();
+    await button(list, "Upcoming").trigger("click");
+    expect(list.emitted("showUpcoming")).toHaveLength(1);
+    await button(list, "Active").trigger("click");
+    expect(list.emitted("showList")).toHaveLength(1);
+    list.unmount();
+
+    // While Upcoming is shown, no status view looks selected.
+    const upcoming = mount(TaskSidebar, {
+      props: {
+        query: createDefaultQuery(),
+        labels: DEFAULT_LABELS,
+        counts: { all: 3, active: 2, completed: 1 },
+        labelCounts: {},
+        accountName: "Guest",
+        accountHint: "",
+        upcomingActive: true,
+        upcomingCount: 4,
+      },
+    });
+    expect(button(upcoming, "All tasks").attributes("aria-pressed")).toBe("false");
+    expect(button(upcoming, "Upcoming").attributes("aria-pressed")).toBe("true");
+    expect(button(upcoming, "Upcoming").text()).toContain("4");
+  });
+
   it("asks to add a task", async () => {
     const wrapper = mountSidebar();
     await button(wrapper, "Add task").trigger("click");

@@ -16,12 +16,14 @@ const props = defineProps<{
   save: (task: NewTask) => Promise<boolean>;
   /** Creates a label from the editor; omit to hide the "+ Label" chip. */
   createLabel?: (name: string) => Promise<Label | null>;
+  /** Pre-fills the date, e.g. when adding a task under a day in the week view. */
+  defaultDeadline?: string | null;
 }>();
 
 const createDraft = (): NewTask => ({
   text: "",
   description: "",
-  deadline: null,
+  deadline: props.defaultDeadline ?? null,
   priority: "medium",
   labelIds: [],
 });

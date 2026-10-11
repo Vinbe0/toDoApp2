@@ -1,3 +1,4 @@
+import { toIsoDate } from "@/features/tasks/model/calendar";
 import type { LabelColor, Priority, Task } from "@/features/tasks/model/types";
 
 export const priorityOptions: Array<{
@@ -12,11 +13,6 @@ export const priorityOptions: Array<{
 
 export const priorityLabel = (priority: Priority) =>
   priorityOptions.find((option) => option.value === priority)?.label ?? priority;
-
-const toIsoDate = (date: Date) => {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-};
 
 /** Colour of the "#" before a label name. Full class names so Tailwind keeps them. */
 export const labelTextColor: Record<LabelColor, string> = {

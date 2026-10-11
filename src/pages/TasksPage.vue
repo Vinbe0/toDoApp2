@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { VueDraggable } from "vue-draggable-plus";
 import BaseButton from "@/shared/ui/BaseButton.vue";
 import EmptyState from "@/shared/ui/EmptyState.vue";
@@ -9,8 +9,10 @@ import TaskComposer from "@/features/tasks/components/TaskComposer.vue";
 import TaskItem from "@/features/tasks/components/TaskItem.vue";
 import TaskListSkeleton from "@/features/tasks/components/TaskListSkeleton.vue";
 import TaskSidebar, { type LabelActions } from "@/features/tasks/components/TaskSidebar.vue";
+import UpcomingView from "@/features/tasks/components/UpcomingView.vue";
 import ViewMenu from "@/features/tasks/components/ViewMenu.vue";
-import { groupByDue, isQueryActive } from "@/features/tasks/model/query";
+import { todayIso } from "@/features/tasks/model/calendar";
+import { groupByDue, isQueryActive, queryTasks } from "@/features/tasks/model/query";
 import { useLabelsStore } from "@/features/tasks/stores/labelsStore";
 import { useTasksStore } from "@/features/tasks/stores/tasksStore";
 import { useAuthStore } from "@/features/auth/stores/authStore";
@@ -18,6 +20,21 @@ import { useAuthStore } from "@/features/auth/stores/authStore";
 const { isRegistered, user } = storeToRefs(useAuthStore());
 const store = useTasksStore();
 const { tasks, query, status, visibleTasks, counts, labelCounts, canReorder } = storeToRefs(store);
+
+const route = useRoute();
+const router = useRouter();
+/** /todo/upcoming shows the week calendar instead of a list. */
+const isUpcoming = computed(() => route.name === "upcoming");
+
+/** The week view uses search and label filters, but not status or sort. */
+const upcomingTasks = computed(() =>
+  queryTasks(tasks.value, { ...query.value, status: "all", sort: "manual" }),
+);
+const upcomingCount = computed(() => {
+  const today = todayIso();
+  return tasks.value.filter((t) => !t.completed && t.deadline && t.deadline.slice(0, 10) >= today)
+    .length;
+});
 
 const labelsStore = useLabelsStore();
 const { labels } = storeToRefs(labelsStore);
@@ -54,6 +71,7 @@ const statusTitles = { all: "All tasks", active: "Active", completed: "Completed
 
 /** The heading names what's on screen: a search, a single label or a status view. */
 const viewTitle = computed(() => {
+  if (isUpcoming.value) return "Upcoming";
   const { search, labelIds, status: viewStatus } = query.value;
   if (search.trim()) return `Search: “${search.trim()}”`;
   const onlyLabel = labelIds.length === 1 ? labelsStore.byId.get(labelIds[0]!) : undefined;
@@ -68,7 +86,6 @@ const account = computed(() =>
 );
 
 const sidebarOpen = ref(false);
-const route = useRoute();
 watch(
   () => route.fullPath,
   () => (sidebarOpen.value = false),
@@ -80,9 +97,11 @@ watch(
 );
 
 const composer = ref<InstanceType<typeof TaskComposer> | null>(null);
+const upcomingView = ref<InstanceType<typeof UpcomingView> | null>(null);
 const addTask = () => {
   sidebarOpen.value = false;
-  composer.value?.focus();
+  if (isUpcoming.value) void upcomingView.value?.focusToday();
+  else void composer.value?.focus();
 };
 </script>
 
@@ -108,7 +127,11 @@ const addTask = () => {
         :account-name="account.name"
         :account-hint="account.hint"
         :label-actions="labelActions"
+        :upcoming-active="isUpcoming"
+        :upcoming-count="upcomingCount"
         @add-task="addTask"
+        @show-list="isUpcoming && router.push({ name: 'tasks' })"
+        @show-upcoming="router.push({ name: 'upcoming' })"
       />
     </aside>
 
@@ -129,11 +152,15 @@ const addTask = () => {
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-fg">{{ viewTitle }}</h1>
               <p class="mt-0.5 text-sm text-fg-subtle">
-                {{ counts.active }} active · {{ counts.completed }} completed
+                <template v-if="isUpcoming">Open tasks by day</template>
+                <template v-else>
+                  {{ counts.active }} active · {{ counts.completed }} completed
+                </template>
               </p>
             </div>
           </div>
           <ViewMenu
+            v-if="!isUpcoming"
             v-model:sort="sort"
             :can-reset="isQueryActive(query)"
             @reset="store.resetQuery"
@@ -142,6 +169,19 @@ const addTask = () => {
         </header>
 
         <TaskListSkeleton v-if="status === 'loading' && !tasks.length" />
+
+        <UpcomingView
+          v-else-if="isUpcoming"
+          ref="upcomingView"
+          :tasks="upcomingTasks"
+          :labels="labels"
+          :resolve-labels="labelsStore.resolve"
+          :save="store.add"
+          :create-label="labelsStore.create"
+          @toggle="store.toggle"
+          @remove="store.remove"
+          @rename="store.rename"
+        />
 
         <EmptyState
           v-else-if="status === 'error' && !tasks.length"
@@ -222,6 +262,7 @@ const addTask = () => {
         </VueDraggable>
 
         <TaskComposer
+          v-if="!isUpcoming"
           ref="composer"
           :labels="labels"
           :save="store.add"
