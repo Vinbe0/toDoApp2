@@ -12,7 +12,8 @@ import type { Label, Task } from "@/features/tasks/model/types";
 const props = withDefaults(
   defineProps<{
     task: Task;
-    draggable: boolean;
+    /** Show the drag handle for manual reordering (list view). */
+    reorderable?: boolean;
     /** The task's labels, resolved from its label ids. */
     labels?: Label[];
   }>(),
@@ -22,6 +23,8 @@ const emit = defineEmits<{
   toggle: [];
   remove: [];
   rename: [text: string];
+  /** New due date (YYYY-MM-DD), or null to remove it. */
+  reschedule: [deadline: string | null];
 }>();
 
 const editing = ref(false);
@@ -29,6 +32,18 @@ const editValue = ref("");
 const editInput = ref<HTMLInputElement | null>(null);
 
 const due = computed(() => describeDue(props.task));
+
+// "Change date" opens the browser's date picker on a visually hidden input.
+const dateInput = ref<HTMLInputElement | null>(null);
+function openDatePicker() {
+  const input = dateInput.value;
+  if (!input) return;
+  if (typeof input.showPicker === "function") input.showPicker();
+  else input.focus();
+}
+function onDatePicked(event: Event) {
+  emit("reschedule", (event.target as HTMLInputElement).value || null);
+}
 
 async function startEdit() {
   editValue.value = props.task.text;
@@ -52,7 +67,7 @@ function cancelEdit() {
 <template>
   <li class="group relative flex items-start gap-3 border-b border-border py-3">
     <span
-      v-if="draggable"
+      v-if="reorderable"
       class="drag-handle absolute top-3.5 -left-6 hidden cursor-grab text-fg-subtle opacity-0 transition group-hover:opacity-100 active:cursor-grabbing sm:block"
       aria-hidden="true"
       title="Drag to reorder"
@@ -120,6 +135,26 @@ function cancelEdit() {
     <div
       class="flex shrink-0 gap-0.5 opacity-100 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
     >
+      <span class="relative">
+        <button
+          type="button"
+          class="grid size-7 place-items-center rounded-md text-fg-subtle hover:bg-surface-muted hover:text-fg"
+          :aria-label="`Change date for ${task.text}`"
+          title="Change date"
+          @click="openDatePicker"
+        >
+          <i class="pi pi-calendar text-xs" aria-hidden="true" />
+        </button>
+        <input
+          ref="dateInput"
+          type="date"
+          class="sr-only bottom-0 left-0"
+          tabindex="-1"
+          aria-hidden="true"
+          :value="task.deadline?.slice(0, 10) ?? ''"
+          @change="onDatePicked"
+        />
+      </span>
       <button
         type="button"
         class="grid size-7 place-items-center rounded-md text-fg-subtle hover:bg-surface-muted hover:text-fg"

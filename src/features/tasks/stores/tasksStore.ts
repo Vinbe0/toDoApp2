@@ -111,6 +111,20 @@ export const useTasksStore = defineStore("tasks", () => {
     );
   }
 
+  /** Changes a task's due date (null removes it), e.g. after dragging it to another day. */
+  async function reschedule(id: string, deadline: string | null) {
+    const task = tasks.value.find((item) => item.id === id);
+    if (!task || (task.deadline?.slice(0, 10) ?? null) === deadline) return;
+    const previous = task.deadline;
+
+    await optimistic(
+      () => (task.deadline = deadline),
+      () => (task.deadline = previous),
+      () => repository.value.update(id, { deadline }),
+      "Could not change the date",
+    );
+  }
+
   async function remove(id: string) {
     const index = tasks.value.findIndex((task) => task.id === id);
     const task = tasks.value[index];
@@ -232,6 +246,7 @@ export const useTasksStore = defineStore("tasks", () => {
     add,
     toggle,
     rename,
+    reschedule,
     remove,
     reorder,
     clearCompleted,

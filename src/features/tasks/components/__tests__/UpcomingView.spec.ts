@@ -115,4 +115,51 @@ describe("UpcomingView", () => {
     expect(wrapper.emitted("toggle")).toEqual([[tasks[3]!.id]]);
     wrapper.unmount();
   });
+
+  describe("dragging a task to another day", () => {
+    // jsdom has no DataTransfer, so drag events carry a minimal stand-in.
+    const dataTransfer = () => ({ setData: vi.fn(), effectAllowed: "", dropEffect: "" });
+    const item = (wrapper: ReturnType<typeof mountView>["wrapper"], title: string) =>
+      wrapper.findAll("li[draggable]").find((li) => li.get("p[title]").text() === title)!;
+    const section = (wrapper: ReturnType<typeof mountView>["wrapper"], label: string) =>
+      wrapper
+        .findAll("section[aria-label]")
+        .find((s) => s.attributes("aria-label")!.startsWith(label))!;
+
+    it("reschedules when dropped on a day section", async () => {
+      const { wrapper } = mountView();
+      const thursday = section(wrapper, "Thursday");
+
+      await item(wrapper, "Tomorrow").trigger("dragstart", { dataTransfer: dataTransfer() });
+      await thursday.trigger("dragover", { dataTransfer: dataTransfer() });
+      expect(thursday.classes()).toContain("ring-1");
+      await thursday.trigger("drop");
+
+      expect(wrapper.emitted("reschedule")).toEqual([[tasks[3]!.id, "2026-10-15"]]);
+      expect(thursday.classes()).not.toContain("ring-1");
+      wrapper.unmount();
+    });
+
+    it("moves an overdue task onto a day in the week strip", async () => {
+      const { wrapper } = mountView();
+      await item(wrapper, "Late").trigger("dragstart", { dataTransfer: dataTransfer() });
+      const friday = wrapper.get('button[aria-label^="Friday 16 October"]');
+      await friday.trigger("dragover");
+      await friday.trigger("drop");
+
+      expect(wrapper.emitted("reschedule")).toEqual([[tasks[0]!.id, "2026-10-16"]]);
+      wrapper.unmount();
+    });
+
+    it("ignores drops on the same day and drags that didn't start here", async () => {
+      const { wrapper } = mountView();
+      await section(wrapper, "Today").trigger("drop");
+
+      await item(wrapper, "Today").trigger("dragstart", { dataTransfer: dataTransfer() });
+      await section(wrapper, "Today").trigger("drop");
+
+      expect(wrapper.emitted("reschedule")).toBeUndefined();
+      wrapper.unmount();
+    });
+  });
 });

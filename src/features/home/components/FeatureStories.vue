@@ -30,7 +30,7 @@ const filterQuery = {
           :key="task.id"
           :task="task"
           :labels="sampleLabelsFor(task)"
-          :draggable="false"
+          :reorderable="false"
         />
       </ul>
     </FeatureStory>
@@ -69,12 +69,12 @@ const filterQuery = {
           <TaskItem
             :task="sampleTasks.coffee"
             :labels="sampleLabelsFor(sampleTasks.coffee)"
-            :draggable="false"
+            :reorderable="false"
           />
           <TaskItem
             :task="sampleTasks.setup"
             :labels="sampleLabelsFor(sampleTasks.setup)"
-            :draggable="false"
+            :reorderable="false"
           />
         </ul>
       </div>

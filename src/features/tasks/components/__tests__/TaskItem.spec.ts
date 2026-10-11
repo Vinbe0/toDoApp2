@@ -17,7 +17,7 @@ const mountItem = (task: Partial<Task> = {}) =>
   mount(TaskItem, {
     props: {
       task: { ...baseTask, ...task },
-      draggable: true,
+      reorderable: true,
       labels: [{ id: "work", name: "Work", color: "sky" }],
     },
     attachTo: document.body,
@@ -44,6 +44,22 @@ describe("TaskItem", () => {
     await wrapper.get('[aria-label^="Delete task"]').trigger("click");
     expect(wrapper.emitted("toggle")).toHaveLength(1);
     expect(wrapper.emitted("remove")).toHaveLength(1);
+  });
+
+  it("shows the drag handle only when reorderable", () => {
+    expect(mountItem().find(".drag-handle").exists()).toBe(true);
+    const plain = mount(TaskItem, { props: { task: baseTask } });
+    expect(plain.find(".drag-handle").exists()).toBe(false);
+  });
+
+  it("emits reschedule with the picked date, or null when cleared", async () => {
+    const wrapper = mountItem({ deadline: "2026-10-12" });
+    const input = wrapper.get<HTMLInputElement>('input[type="date"]');
+    expect(input.element.value).toBe("2026-10-12");
+
+    await input.setValue("2026-10-15");
+    await input.setValue("");
+    expect(wrapper.emitted("reschedule")).toEqual([["2026-10-15"], [null]]);
   });
 
   it("reflects completion for assistive tech", () => {
