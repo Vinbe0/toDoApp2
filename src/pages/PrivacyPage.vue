@@ -17,7 +17,7 @@ const sections: Array<{ title: string; items: string[] }> = [
       "The server stores your email address, your password as a bcrypt hash (never the password itself), and your tasks and labels.",
       "The server is whatever instance you or the person running this demo started. It is often a database on their own computer.",
       "After you log in, the browser keeps a sign-in token (valid for 7 days) and your email in local storage. Logging out removes them.",
-      "There is no account deletion in the app yet; whoever runs the server can remove an account, which also removes its tasks and labels.",
+      "You can delete your account on the Account page (your password is required). This permanently removes it with all its tasks and labels.",
     ],
   },
   {

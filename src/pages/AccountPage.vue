@@ -6,6 +6,8 @@ import BaseCard from "@/shared/ui/BaseCard.vue";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { storeToRefs } from "pinia";
 import { useTasksStore } from "@/features/tasks/stores/tasksStore";
+import { useLabelsStore } from "@/features/tasks/stores/labelsStore";
+import DeleteAccountSection from "@/features/auth/components/DeleteAccountSection.vue";
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -13,8 +15,11 @@ const { user } = storeToRefs(auth);
 const tasksStore = useTasksStore();
 const { counts } = storeToRefs(tasksStore);
 
+const labelsStore = useLabelsStore();
+
 onMounted(() => {
   if (tasksStore.status === "idle") void tasksStore.load();
+  if (labelsStore.status === "idle") void labelsStore.load();
 });
 
 const initials = computed(() => user.value?.email.slice(0, 2).toUpperCase() ?? "?");
@@ -61,5 +66,11 @@ const submit = () => {
     <BaseButton to="/todo" size="lg" class="justify-self-start">
       Go to my tasks <i class="pi pi-arrow-right" aria-hidden="true" />
     </BaseButton>
+
+    <DeleteAccountSection
+      class="mt-6"
+      :task-count="tasksStore.tasks.length"
+      :label-count="labelsStore.labels.length"
+    />
   </div>
 </template>

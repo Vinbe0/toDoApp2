@@ -1,11 +1,13 @@
 import { Router, type RequestHandler } from "express";
+import type { AccountService } from "../../application/AccountService.js";
 import type { AuthService } from "../../application/AuthService.js";
 import { validate } from "../middleware/validate.js";
-import { loginSchema, registerSchema } from "../schemas.js";
+import { deleteAccountSchema, loginSchema, registerSchema } from "../schemas.js";
 
 /** limitAttempts throttles login/register only, so session checks are never blocked. */
 export function createAuthRouter(
   authService: AuthService,
+  accountService: AccountService,
   authenticate: RequestHandler,
   limitAttempts: RequestHandler,
 ) {
@@ -34,6 +36,22 @@ export function createAuthRouter(
       next(error);
     }
   });
+
+  // Permanently deletes the signed-in account; the password must be re-entered.
+  router.delete(
+    "/me",
+    limitAttempts,
+    authenticate,
+    validate(deleteAccountSchema),
+    async (req, res, next) => {
+      try {
+        await accountService.deleteAccount(req.user!.userId, req.body.password);
+        res.status(204).send();
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   return router;
 }

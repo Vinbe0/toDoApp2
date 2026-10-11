@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import type { AccountService } from "../application/AccountService.js";
 import type { AuthService } from "../application/AuthService.js";
 import type { LabelService } from "../application/LabelService.js";
 import type { TaskService } from "../application/TaskService.js";
@@ -15,6 +16,7 @@ import { createTasksRouter } from "./routes/tasks.js";
 export type AppDependencies = {
   taskService: TaskService;
   authService: AuthService;
+  accountService: AccountService;
   labelService: LabelService;
   /** Browser origins allowed by CORS. Omit to allow any origin (tests). */
   corsOrigins?: string[];
@@ -27,6 +29,7 @@ export type AppDependencies = {
 export function createApp({
   taskService,
   authService,
+  accountService,
   labelService,
   corsOrigins,
   authRateLimit = 20,
@@ -53,7 +56,7 @@ export function createApp({
     message: { error: "TooManyRequests", message: "Too many attempts. Try again later." },
   });
   const authenticate = createAuthenticate(authService);
-  app.use("/api/auth", createAuthRouter(authService, authenticate, authLimiter));
+  app.use("/api/auth", createAuthRouter(authService, accountService, authenticate, authLimiter));
   app.use("/api/tasks", createTasksRouter(taskService, authenticate));
   app.use("/api/labels", createLabelsRouter(labelService, authenticate));
 

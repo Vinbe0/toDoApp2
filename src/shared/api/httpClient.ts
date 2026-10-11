@@ -77,8 +77,8 @@ export function createHttpClient({
       request<T>("PUT", path, body, options),
     patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
       request<T>("PATCH", path, body, options),
-    delete: <T = void>(path: string, options?: RequestOptions) =>
-      request<T>("DELETE", path, undefined, options),
+    delete: <T = void>(path: string, body?: unknown, options?: RequestOptions) =>
+      request<T>("DELETE", path, body, options),
 
     setTokenProvider(provider: () => string | null) {
       getToken = provider;

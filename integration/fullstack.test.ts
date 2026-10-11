@@ -2,6 +2,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // Backend
+import { AccountService } from "../server/src/application/AccountService.js";
 import { AuthService } from "../server/src/application/AuthService.js";
 import { LabelService } from "../server/src/application/LabelService.js";
 import { TaskService } from "../server/src/application/TaskService.js";
@@ -31,12 +32,20 @@ beforeAll(async () => {
   const labelRepository = new DrizzleLabelRepository(database.db);
   const taskRepository = new DrizzleTaskRepository(database.db);
   const labelService = new LabelService(labelRepository, taskRepository);
+  const userRepository = new DrizzleUserRepository(database.db);
+  const passwordHasher = new BcryptPasswordHasher(4);
   const app = createApp({
     labelService,
     taskService: new TaskService(taskRepository, labelRepository),
+    accountService: new AccountService(
+      userRepository,
+      taskRepository,
+      labelRepository,
+      passwordHasher,
+    ),
     authService: new AuthService(
-      new DrizzleUserRepository(database.db),
-      new BcryptPasswordHasher(4),
+      userRepository,
+      passwordHasher,
       new JwtTokenService("integration-secret"),
       (userId) => labelService.createDefaultLabels(userId),
     ),
@@ -165,6 +174,28 @@ describe("frontend ↔ backend", () => {
     expect((await tasks.list()).find((t) => t.id === task.id)?.labelIds).toEqual([]);
     const duplicate = await labels.create({ name: "work", color: "sky" }).catch((e) => e);
     expect(duplicate).toMatchObject({ status: 409 });
+  });
+
+  it("deletes an account with its data; the old token stops working", async () => {
+    const { auth, tasks, labels } = await signIn("leaving@example.com");
+    await tasks.create({
+      text: "Bye",
+      description: "",
+      deadline: null,
+      priority: "low",
+      labelIds: [],
+    });
+
+    const wrong = await auth.deleteAccount("wrong-password").catch((e) => e);
+    expect(wrong).toMatchObject({ status: 403 });
+    expect(await tasks.list()).toHaveLength(1);
+
+    await auth.deleteAccount("password123");
+
+    await expect(tasks.list()).rejects.toMatchObject({ isUnauthorized: true });
+    await expect(labels.list()).rejects.toMatchObject({ isUnauthorized: true });
+    const login = await auth.login("leaving@example.com", "password123").catch((e) => e);
+    expect(login).toMatchObject({ status: 401 });
   });
 
   it("keeps users' tasks private", async () => {

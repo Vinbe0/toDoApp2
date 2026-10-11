@@ -5,7 +5,7 @@ import { HttpError, NetworkError } from "@/shared/api";
 import { useAuthStore } from "../authStore";
 
 vi.mock("@/features/auth/api/authApi", () => ({
-  authApi: { login: vi.fn(), register: vi.fn(), me: vi.fn() },
+  authApi: { login: vi.fn(), register: vi.fn(), me: vi.fn(), deleteAccount: vi.fn() },
 }));
 
 const session = { token: "jwt-token", user: { id: "u1", email: "me@example.com" } };
@@ -94,6 +94,31 @@ describe("auth store", () => {
       localStorage.clear();
       await useAuthStore().validateSession();
       expect(authApi.me).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteAccount", () => {
+    it("deletes on the server, then ends the session", async () => {
+      vi.mocked(authApi.login).mockResolvedValue(session);
+      vi.mocked(authApi.deleteAccount).mockResolvedValue(undefined);
+      const auth = useAuthStore();
+      await auth.login("me@example.com", "secret");
+
+      await auth.deleteAccount("secret");
+
+      expect(authApi.deleteAccount).toHaveBeenCalledWith("secret");
+      expect(auth.isGuest).toBe(true);
+      expect(localStorage.getItem("token")).toBeNull();
+    });
+
+    it("keeps the session when the password is wrong", async () => {
+      vi.mocked(authApi.login).mockResolvedValue(session);
+      vi.mocked(authApi.deleteAccount).mockRejectedValue(new HttpError("Incorrect password", 403));
+      const auth = useAuthStore();
+      await auth.login("me@example.com", "secret");
+
+      await expect(auth.deleteAccount("wrong")).rejects.toMatchObject({ status: 403 });
+      expect(auth.isRegistered).toBe(true);
     });
   });
 

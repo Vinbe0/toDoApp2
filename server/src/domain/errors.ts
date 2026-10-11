@@ -33,3 +33,6 @@ export class UnauthorizedError extends DomainError {
 }
 
 export class ConflictError extends DomainError {}
+
+/** The caller is signed in but not allowed to do this (e.g. wrong password confirmation). */
+export class ForbiddenError extends DomainError {}

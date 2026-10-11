@@ -16,7 +16,7 @@ A full-stack task planner: a **Vue 3 + TypeScript + Pinia** frontend and an **Ex
 - **Undo** after clearing completed tasks, with deletion delayed until the undo window closes
 - **Overdue and due-today badges**, task counters, a loading skeleton and empty states
 - **Guest or account mode**: guests use `localStorage`. When a guest signs up or logs in, the app offers to import their tasks.
-- **JWT authentication**: protected routes, redirect back after login, automatic logout on an expired session
+- **JWT authentication**: protected routes, redirect back after login, automatic logout on an expired session, and account deletion (password confirmed) that removes all of a user's data
 - **Optimistic updates** that roll back with an error message if the request fails
 - **Dark mode**, a responsive layout and accessible controls (labels, ARIA states, keyboard support)
 

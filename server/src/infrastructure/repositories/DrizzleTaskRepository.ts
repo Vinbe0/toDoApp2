@@ -96,6 +96,11 @@ export class DrizzleTaskRepository implements TaskRepository {
     await this.db.delete(taskLabels).where(eq(taskLabels.labelId, labelId));
   }
 
+  async deleteAllTasks(userId: string): Promise<void> {
+    // task_labels rows go with them (foreign key cascade).
+    await this.db.delete(tasks).where(eq(tasks.userId, userId));
+  }
+
   async deleteTask(id: string): Promise<boolean> {
     if (!UUID.test(id)) return false;
     const deleted = await this.db.delete(tasks).where(eq(tasks.id, id)).returning({ id: tasks.id });

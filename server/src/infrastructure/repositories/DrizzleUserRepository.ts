@@ -29,4 +29,11 @@ export class DrizzleUserRepository implements UserRepository {
     });
     return user;
   }
+
+  async deleteUser(id: string): Promise<boolean> {
+    // Postgres rejects malformed uuids; treat them as "no such user".
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
+    const deleted = await this.db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
+    return deleted.length > 0;
+  }
 }

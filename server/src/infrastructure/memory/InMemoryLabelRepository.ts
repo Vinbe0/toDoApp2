@@ -37,6 +37,10 @@ export class InMemoryLabelRepository implements LabelRepository {
     return updated;
   }
 
+  async deleteAllLabels(userId: string): Promise<void> {
+    for (const label of await this.listLabels(userId)) this.labels.delete(label.id);
+  }
+
   async deleteLabel(id: string): Promise<boolean> {
     return this.labels.delete(id);
   }
