@@ -30,6 +30,7 @@ const emit = defineEmits<{
   toggle: [id: string];
   remove: [id: string];
   rename: [id: string, text: string];
+  reschedule: [id: string, deadline: string | null];
 }>();
 
 const today = computed(() => todayIso(props.now));
@@ -133,10 +134,11 @@ function dayHeading(day: IsoDate) {
           :key="task.id"
           :task="task"
           :labels="resolveLabels(task.labelIds)"
-          :draggable="false"
+          :reorderable="false"
           @toggle="emit('toggle', task.id)"
           @remove="emit('remove', task.id)"
           @rename="emit('rename', task.id, $event)"
+          @reschedule="emit('reschedule', task.id, $event)"
         />
       </ul>
     </section>
@@ -163,10 +165,11 @@ function dayHeading(day: IsoDate) {
           :key="task.id"
           :task="task"
           :labels="resolveLabels(task.labelIds)"
-          :draggable="false"
+          :reorderable="false"
           @toggle="emit('toggle', task.id)"
           @remove="emit('remove', task.id)"
           @rename="emit('rename', task.id, $event)"
+          @reschedule="emit('reschedule', task.id, $event)"
         />
       </ul>
       <TaskComposer

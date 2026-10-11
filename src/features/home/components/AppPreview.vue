@@ -37,7 +37,7 @@ const tasks: Task[] = [
           :key="task.id"
           :task="task"
           :labels="sampleLabelsFor(task)"
-          :draggable="false"
+          :reorderable="false"
         />
       </ul>
       <p class="flex items-center gap-3 py-2.5 text-sm text-fg-muted">

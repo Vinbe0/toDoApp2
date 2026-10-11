@@ -181,6 +181,7 @@ const addTask = () => {
           @toggle="store.toggle"
           @remove="store.remove"
           @rename="store.rename"
+          @reschedule="store.reschedule"
         />
 
         <EmptyState
@@ -231,10 +232,11 @@ const addTask = () => {
                 :key="task.id"
                 :task="task"
                 :labels="labelsStore.resolve(task.labelIds)"
-                :draggable="false"
+                :reorderable="false"
                 @toggle="store.toggle(task.id)"
                 @remove="store.remove(task.id)"
                 @rename="store.rename(task.id, $event)"
+                @reschedule="store.reschedule(task.id, $event)"
               />
             </ul>
           </section>
@@ -254,10 +256,11 @@ const addTask = () => {
             :key="task.id"
             :task="task"
             :labels="labelsStore.resolve(task.labelIds)"
-            :draggable="canReorder"
+            :reorderable="canReorder"
             @toggle="store.toggle(task.id)"
             @remove="store.remove(task.id)"
             @rename="store.rename(task.id, $event)"
+            @reschedule="store.reschedule(task.id, $event)"
           />
         </VueDraggable>
 

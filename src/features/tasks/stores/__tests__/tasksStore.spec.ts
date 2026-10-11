@@ -141,6 +141,17 @@ describe("tasks store", () => {
     expect(store.tasks[0]?.text).toBe("New");
   });
 
+  it("reschedules a task and rolls back when saving fails", async () => {
+    const store = await setup(["Report"]);
+    await store.reschedule("local-1", "2026-10-14");
+    expect(store.tasks[0]?.deadline).toBe("2026-10-14");
+
+    vi.spyOn(local, "update").mockRejectedValueOnce(new Error("Nope"));
+    await store.reschedule("local-1", null);
+    expect(store.tasks[0]?.deadline).toBe("2026-10-14");
+    expect(notify.fromError).toHaveBeenCalledWith(expect.any(Error), "Could not change the date");
+  });
+
   it("restores a deleted task when the delete fails", async () => {
     const store = await setup(["A", "B"]);
     vi.spyOn(local, "remove").mockRejectedValueOnce(new Error("Nope"));
