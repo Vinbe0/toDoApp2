@@ -68,6 +68,39 @@ async function scrollToDay(day: IsoDate) {
   document.getElementById(`day-${day}`)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
+// Drag a task onto another day (a section or a week-strip day) to move its due date.
+const draggingId = ref<string | null>(null);
+const overDay = ref<IsoDate | null>(null);
+
+function onDragStart(event: DragEvent, task: Task) {
+  draggingId.value = task.id;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", task.id);
+  }
+}
+function onDragEnd() {
+  draggingId.value = null;
+  overDay.value = null;
+}
+function onDragOver(event: DragEvent, day: IsoDate) {
+  if (!draggingId.value) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  overDay.value = day;
+}
+function onDragLeave(event: DragEvent, day: IsoDate) {
+  const target = event.currentTarget as HTMLElement | null;
+  if (target?.contains(event.relatedTarget as Node | null)) return;
+  if (overDay.value === day) overDay.value = null;
+}
+function dropOn(day: IsoDate) {
+  const id = draggingId.value;
+  onDragEnd();
+  const task = id && props.tasks.find((item) => item.id === id);
+  if (task && task.deadline?.slice(0, 10) !== day) emit("reschedule", task.id, day);
+}
+
 function dayHeading(day: IsoDate) {
   const date = parseIsoDate(day).toLocaleDateString("en-GB", {
     weekday: "long",
@@ -118,7 +151,9 @@ function dayHeading(day: IsoDate) {
       :today="today"
       :counts="counts"
       class="mb-6 border-b border-border pb-3"
+      :accepts-drop="draggingId !== null"
       @select="scrollToDay"
+      @drop-task="dropOn"
     />
 
     <section v-if="overdue.length" class="mb-6" aria-labelledby="day-overdue-title">
@@ -135,6 +170,11 @@ function dayHeading(day: IsoDate) {
           :task="task"
           :labels="resolveLabels(task.labelIds)"
           :reorderable="false"
+          draggable="true"
+          class="cursor-grab active:cursor-grabbing"
+          :class="draggingId === task.id && 'opacity-40'"
+          @dragstart="onDragStart($event, task)"
+          @dragend="onDragEnd"
           @toggle="emit('toggle', task.id)"
           @remove="emit('remove', task.id)"
           @rename="emit('rename', task.id, $event)"
@@ -147,8 +187,12 @@ function dayHeading(day: IsoDate) {
       v-for="day in days"
       :id="`day-${day}`"
       :key="day"
-      class="mb-6 scroll-mt-20"
+      class="-mx-2 mb-4 scroll-mt-20 rounded-lg px-2 pb-2 transition-colors"
+      :class="overDay === day && 'bg-brand-500/5 ring-1 ring-brand-500/40'"
       :aria-label="dayHeading(day)"
+      @dragover="onDragOver($event, day)"
+      @dragleave="onDragLeave($event, day)"
+      @drop.prevent="dropOn(day)"
     >
       <h2
         class="border-b border-border pb-1.5 text-sm font-semibold"
@@ -166,6 +210,11 @@ function dayHeading(day: IsoDate) {
           :task="task"
           :labels="resolveLabels(task.labelIds)"
           :reorderable="false"
+          draggable="true"
+          class="cursor-grab active:cursor-grabbing"
+          :class="draggingId === task.id && 'opacity-40'"
+          @dragstart="onDragStart($event, task)"
+          @dragend="onDragEnd"
           @toggle="emit('toggle', task.id)"
           @remove="emit('remove', task.id)"
           @rename="emit('rename', task.id, $event)"
