@@ -26,16 +26,9 @@ export function addDays(iso: IsoDate, days: number): IsoDate {
   return toIsoDate(date);
 }
 
-/** The Monday of the week containing `iso`. */
-export function startOfWeek(iso: IsoDate): IsoDate {
-  const weekday = (parseIsoDate(iso).getDay() + 6) % 7; // Monday = 0 … Sunday = 6
-  return addDays(iso, -weekday);
-}
-
-/** The seven days (Monday to Sunday) of the week containing `iso`. */
-export function weekOf(iso: IsoDate): IsoDate[] {
-  const monday = startOfWeek(iso);
-  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+/** `count` consecutive days starting at `start`, e.g. a rolling week from today. */
+export function daysFrom(start: IsoDate, count = 7): IsoDate[] {
+  return Array.from({ length: count }, (_, i) => addDays(start, i));
 }
 
 const dueDay = (task: Task): IsoDate | null => task.deadline?.slice(0, 10) ?? null;

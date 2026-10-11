@@ -24,9 +24,13 @@ const props = defineProps<{
   accountName: string;
   accountHint: string;
   labelActions?: LabelActions;
+  /** True while the Upcoming (week) view is shown instead of a list. */
+  upcomingActive?: boolean;
+  /** Open tasks with a deadline from today on. */
+  upcomingCount?: number;
 }>();
 
-const emit = defineEmits<{ addTask: [] }>();
+const emit = defineEmits<{ addTask: []; showList: []; showUpcoming: [] }>();
 
 const query = defineModel<TaskQuery>("query", { required: true });
 
@@ -115,13 +119,28 @@ const itemActive = "bg-brand-500/10 font-medium text-brand-700 dark:text-brand-3
         v-for="view in views"
         :key="view.value"
         type="button"
-        :class="[item, query.status === view.value ? itemActive : itemIdle]"
-        :aria-pressed="query.status === view.value"
-        @click="update({ status: view.value })"
+        :class="[item, !upcomingActive && query.status === view.value ? itemActive : itemIdle]"
+        :aria-pressed="!upcomingActive && query.status === view.value"
+        @click="
+          update({ status: view.value });
+          emit('showList');
+        "
       >
         <i :class="['pi', view.icon, 'w-5 text-center text-xs']" aria-hidden="true" />
         <span class="flex-1">{{ view.label }}</span>
         <span class="text-xs text-fg-subtle">{{ counts[view.value] }}</span>
+      </button>
+      <button
+        type="button"
+        :class="[item, upcomingActive ? itemActive : itemIdle]"
+        :aria-pressed="!!upcomingActive"
+        @click="emit('showUpcoming')"
+      >
+        <i class="pi pi-calendar w-5 text-center text-xs" aria-hidden="true" />
+        <span class="flex-1">Upcoming</span>
+        <span v-if="upcomingCount !== undefined" class="text-xs text-fg-subtle">{{
+          upcomingCount
+        }}</span>
       </button>
     </div>
 

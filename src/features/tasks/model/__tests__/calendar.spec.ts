@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "../types";
-import {
-  addDays,
-  openTasksByDay,
-  overdueTasks,
-  startOfWeek,
-  toIsoDate,
-  weekOf,
-  weekTitle,
-} from "../calendar";
+import { addDays, daysFrom, openTasksByDay, overdueTasks, toIsoDate, weekTitle } from "../calendar";
 
 let id = 0;
 const task = (deadline: string | null, completed = false): Task => ({
@@ -37,24 +29,23 @@ describe("dates", () => {
     expect(addDays("2026-10-25", 1)).toBe("2026-10-26");
   });
 
-  it("starts weeks on Monday", () => {
-    expect(startOfWeek("2026-10-11")).toBe("2026-10-05"); // Sunday → previous Monday
-    expect(startOfWeek("2026-10-12")).toBe("2026-10-12"); // Monday
-    expect(weekOf("2026-10-14")).toEqual([
+  it("lists consecutive days from a start date", () => {
+    expect(daysFrom("2026-10-11")).toEqual([
+      "2026-10-11",
       "2026-10-12",
       "2026-10-13",
       "2026-10-14",
       "2026-10-15",
       "2026-10-16",
       "2026-10-17",
-      "2026-10-18",
     ]);
+    expect(daysFrom("2026-10-11", 2)).toEqual(["2026-10-11", "2026-10-12"]);
   });
 
   it("titles a week by month, covering weeks that span two months or years", () => {
-    expect(weekTitle(weekOf("2026-10-14"))).toBe("October 2026");
-    expect(weekTitle(weekOf("2026-09-30"))).toBe("September – October 2026");
-    expect(weekTitle(weekOf("2026-12-31"))).toBe("December 2026 – January 2027");
+    expect(weekTitle(daysFrom("2026-10-12"))).toBe("October 2026");
+    expect(weekTitle(daysFrom("2026-09-28"))).toBe("September – October 2026");
+    expect(weekTitle(daysFrom("2026-12-28"))).toBe("December 2026 – January 2027");
   });
 });
 
@@ -68,7 +59,7 @@ describe("tasks by day", () => {
 
     const byDay = openTasksByDay(
       [monday, alsoMonday, done, nextWeek, undated],
-      weekOf("2026-10-12"),
+      daysFrom("2026-10-12"),
     );
     expect(byDay["2026-10-12"]).toEqual([monday, alsoMonday]);
     expect(byDay["2026-10-13"]).toEqual([]);

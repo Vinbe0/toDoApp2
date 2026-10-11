@@ -65,6 +65,24 @@ describe("TaskComposer", () => {
     wrapper.unmount();
   });
 
+  it("can start with a date already set, and keeps it for the next task", async () => {
+    const save = vi.fn<(task: NewTask) => Promise<boolean>>(async () => true);
+    const wrapper = mount(TaskComposer, {
+      props: { labels: DEFAULT_LABELS, save, defaultDeadline: "2026-10-13" },
+      attachTo: document.body,
+    });
+    await wrapper.get("button").trigger("click");
+    await wrapper.get('input[aria-label="Task title"]').setValue("A");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    await wrapper.get('input[aria-label="Task title"]').setValue("B");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(save.mock.calls.map(([task]) => task.deadline)).toEqual(["2026-10-13", "2026-10-13"]);
+    wrapper.unmount();
+  });
+
   it("keeps the draft when saving fails", async () => {
     const { wrapper, title } = await mountOpenComposer(false);
     await title().setValue("Ship it");

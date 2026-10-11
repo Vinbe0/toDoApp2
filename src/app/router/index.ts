@@ -26,6 +26,13 @@ const router = createRouter({
       meta: { title: "My tasks", app: true },
     },
     {
+      // Same page, showing the week calendar instead of a list.
+      path: "/todo/upcoming",
+      name: "upcoming",
+      component: () => import("@/pages/TasksPage.vue"),
+      meta: { title: "Upcoming", app: true },
+    },
+    {
       path: "/account",
       name: "account",
       component: () => import("@/pages/AccountPage.vue"),
